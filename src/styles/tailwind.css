@@ -1,0 +1,12 @@
+/* Đây là nơi bạn sẽ import các directives của Tailwind CSS */
+/* Nếu bạn sử dụng Create React App và đã cài đặt Tailwind theo hướng dẫn chính thức,
+   file này có thể đã được tạo hoặc bạn sẽ import Tailwind trong file index.css hoặc App.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Bạn có thể thêm các custom base styles hoặc components ở đây nếu cần */
+/* body {
+  font-family: 'Inter', sans-serif; // Ví dụ nếu bạn muốn set font mặc định
+} */
