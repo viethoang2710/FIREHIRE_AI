@@ -1,7 +1,8 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
 
-const CVBuilderIntro = () => {
+// Nhận prop `navigate` từ component cha (HomePage)
+const CVBuilderIntro = ({ navigate }) => {
   return (
     <section className="py-12 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg shadow-xl my-8">
       <div className="container mx-auto px-4 text-center">
@@ -11,7 +12,11 @@ const CVBuilderIntro = () => {
           Sử dụng công cụ tạo CV trực tuyến của chúng tôi với hàng trăm mẫu CV đa dạng,
           giúp bạn dễ dàng tạo ấn tượng với nhà tuyển dụng.
         </p>
-        <button className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg transform hover:scale-105">
+        {/* Cập nhật sự kiện onClick để gọi hàm navigate */}
+        <button 
+          onClick={() => navigate('cvBuilder')}
+          className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-teal-500"
+        >
           Tạo CV Ngay
         </button>
       </div>
