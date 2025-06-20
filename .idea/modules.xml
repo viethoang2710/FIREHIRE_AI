@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/FireHireAI.iml" filepath="$PROJECT_DIR$/.idea/FireHireAI.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/FIREHIRE_AI.iml" filepath="$PROJECT_DIR$/.idea/FIREHIRE_AI.iml" />
+      <module fileurl="file://$PROJECT_DIR$/FireHireAI/FireHireAI.iml" filepath="$PROJECT_DIR$/FireHireAI/FireHireAI.iml" />
     </modules>
   </component>
 </project>
