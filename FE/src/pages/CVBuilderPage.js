@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { User, Briefcase, Award, Star, Edit, PlusCircle, Trash2, Download, Settings } from 'lucide-react';
 
+
+
 // Import các component đã được phân tách
 import AccordionSection from '../components/UI/AccordionSection';
 import CVPreview from '../components/CVBuilder/CVPreview';
+
+
 
 const CVBuilderPage = () => {
   // State quản lý mục nào đang được mở
