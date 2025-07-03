@@ -1,3 +1,5 @@
+// App.js
+
 import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { NavigationProvider } from './contexts/NavigationContext';
@@ -5,15 +7,18 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Import components
+// Layout & UI
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
-import HomePage from './pages/HomePage';
-import LoginPage from './components/Auth/LoginPage';
 import AlertMessage from './components/UI/AlertMessage';
+import Chatbot from './components/UI/Chatbot';
+
+// Auth Pages
+import LoginPage from './components/Auth/LoginPage';
 import RegistrationPage from './components/Auth/RegistrationPage';
 
-// Import pages
+// Main Pages
+import HomePage from './pages/HomePage';
 import JobSearchPage from './pages/JobSearchPage';
 import JobsByIndustryPage from './pages/JobsByIndustryPage';
 import JobsByLocationPage from './pages/JobsByLocationPage';
@@ -48,9 +53,20 @@ function App() {
     <AuthProvider>
       <NavigationProvider>
         <div className="font-inter bg-gray-50 min-h-screen">
-          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
           {alert && <AlertMessage message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
           <Header showAlert={showAlert} />
+
           <main className="min-h-[calc(100vh-64px-200px)]">
             <Routes>
               <Route path="/" element={<HomePage showAlert={showAlert} />} />
@@ -79,7 +95,9 @@ function App() {
               <Route path="*" element={<NotFoundPage showAlert={showAlert} />} />
             </Routes>
           </main>
+
           <Footer />
+          <Chatbot />
         </div>
       </NavigationProvider>
     </AuthProvider>
