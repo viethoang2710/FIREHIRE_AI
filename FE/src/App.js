@@ -1,5 +1,3 @@
-// App.js
-
 import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { NavigationProvider } from './contexts/NavigationContext';
@@ -40,6 +38,8 @@ import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import NetworkDebugPage from './pages/NetworkDebugPage';
 import ApiTestPage from './pages/ApiTestPage';
+import RecruiterDashboardPage from './pages/RecruiterDashboardPage'; // <-- Import trang mới
+import ViewApplicantsPage from './pages/ViewApplicantsPage'; // <-- Import trang mới
 
 function App() {
   const [alert, setAlert] = useState(null);
@@ -92,6 +92,11 @@ function App() {
               <Route path="/profile" element={<ProfilePage showAlert={showAlert} />} />
               <Route path="/network-debug" element={<NetworkDebugPage />} />
               <Route path="/api-test" element={<ApiTestPage />} />
+              
+              {/* --- THÊM ROUTE MỚI CHO NHÀ TUYỂN DỤNG --- */}
+              <Route path="/recruiter/dashboard" element={<RecruiterDashboardPage />} />
+              <Route path="/recruiter/jobs/:jobId/applicants" element={<ViewApplicantsPage />} />
+
               <Route path="*" element={<NotFoundPage showAlert={showAlert} />} />
             </Routes>
           </main>

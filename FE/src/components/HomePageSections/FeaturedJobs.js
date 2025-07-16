@@ -1,8 +1,31 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { featuredJobsData } from '../../data/mockData';
 
 const FeaturedJobs = () => {
+  const fileInputRef = useRef(null);
+
+  // Gọi khi click "Nộp CV"
+  const handleApplyClick = (jobId) => {
+    // Lưu lại jobId nếu cần (ở đây bạn có thể xử lý logic liên kết job sau này)
+    console.log("Ứng tuyển vào job ID:", jobId);
+
+    // Mở input file
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // TODO: Gửi file lên server hoặc xử lý tùy yêu cầu
+      console.log("File đã chọn:", file.name);
+      // Reset input để lần sau chọn lại cùng file vẫn gọi được
+      event.target.value = '';
+    }
+  };
+
   return (
     <section className="py-12 bg-white rounded-lg shadow-lg my-8">
       <div className="container mx-auto px-4">
@@ -26,10 +49,25 @@ const FeaturedJobs = () => {
                 </div>
                 <p className="text-xs text-gray-400 mt-2">Đăng {job.date}</p>
               </div>
-               <button className="self-start mt-1 bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-3 rounded-md transition-colors">Ứng tuyển</button>
+              <button
+                onClick={() => handleApplyClick(job.id)}
+                className="self-start mt-1 bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-3 rounded-md transition-colors"
+              >
+                Nộp CV
+              </button>
             </div>
           ))}
         </div>
+
+        {/* Input file ẩn */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".pdf,.doc,.docx"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
         <div className="text-center mt-10">
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg transform hover:scale-105">
             Xem Thêm Việc Làm
