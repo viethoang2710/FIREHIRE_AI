@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #e0e0e0; padding: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Test Role Response</h1>
+    
+    <button onclick="testRoles()">Test Roles</button>
+    <button onclick="createTestEmployer()">Create Test Employer</button>
+    <button onclick="testLogin()">Test Login</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        async function testRoles() {
+            try {
+                const response = await fetch(`${API_BASE}/debug/test-all-roles`);
+                const data = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        <h3>Enum Test Results:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        <h3>Error:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function createTestEmployer() {
+            try {
+                const response = await fetch(`${API_BASE}/debug/create-test-employer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        <h3>Create Test Employer Result:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        <h3>Error creating employer:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/debug/test-login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        <h3>Login Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        
+                        <h3>Role Analysis:</h3>
+                        <p><strong>Role value:</strong> ${data.role}</p>
+                        <p><strong>Role type:</strong> ${typeof data.role}</p>
+                        <p><strong>String comparison:</strong></p>
+                        <ul>
+                            <li>data.role === "ADMIN": ${data.role === "ADMIN"}</li>
+                            <li>data.role === "EMPLOYER": ${data.role === "EMPLOYER"}</li>
+                            <li>data.role === "CANDIDATE": ${data.role === "CANDIDATE"}</li>
+                        </ul>
+                        
+                        <h3>Frontend Logic Result:</h3>
+                        <p><strong>Will redirect to:</strong> ${
+                            data.role === "ADMIN" ? "/admin/dashboard" :
+                            data.role === "EMPLOYER" ? "/recruiter/dashboard" :
+                            data.role === "CANDIDATE" ? "/" : 
+                            "Unknown - will go to /"
+                        }</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        <h3>Login Error:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

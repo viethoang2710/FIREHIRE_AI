@@ -1,0 +1,77 @@
+package com.example.firehire_ai.controller;
+
+import com.example.firehire_ai.dto.response.AuthResponse;
+import com.example.firehire_ai.dto.RegisterEmployerRequest;
+import com.example.firehire_ai.dto.AuthRequest;
+import com.example.firehire_ai.entity.User;
+import com.example.firehire_ai.service.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/debug")
+@CrossOrigin(origins = "*")
+public class DebugController {
+
+    @Autowired
+    private AuthService authService;
+
+    @GetMapping("/test-roles")
+    public AuthResponse testRoles() {
+        AuthResponse response = new AuthResponse();
+        response.setUserId(1);
+        response.setFullName("Test User");
+        response.setEmail("test@example.com");
+        response.setRole("EMPLOYER"); // Now using String
+        response.setToken("test-token");
+        return response;
+    }
+
+    @GetMapping("/test-all-roles")
+    public Object testAllRoles() {
+        return new Object() {
+            public final String ADMIN = User.UserRole.ADMIN.toString();
+            public final String EMPLOYER = User.UserRole.EMPLOYER.toString();
+            public final String CANDIDATE = User.UserRole.CANDIDATE.toString();
+            public final User.UserRole adminEnum = User.UserRole.ADMIN;
+            public final User.UserRole employerEnum = User.UserRole.EMPLOYER;
+            public final User.UserRole candidateEnum = User.UserRole.CANDIDATE;
+        };
+    }
+
+    @PostMapping("/create-test-employer")
+    public ResponseEntity<?> createTestEmployer() {
+        RegisterEmployerRequest request = new RegisterEmployerRequest();
+        request.setFullName("Test Employer");
+        request.setEmail("test@employer.com");
+        request.setPassword("password123");
+        request.setPhoneNumber("123456789");
+        request.setCompanyName("Test Company");
+        request.setWebsite("https://test.com");
+        request.setDescription("Test company description");
+
+        return authService.registerEmployer(request);
+    }
+
+    @PostMapping("/test-login")
+    public ResponseEntity<?> testLogin() {
+        AuthRequest request = new AuthRequest();
+        request.setEmail("test@employer.com");
+        request.setPassword("password123");
+
+        ResponseEntity<?> result = authService.login(request);
+
+        // Debug logging
+        System.out.println("=== BACKEND LOGIN DEBUG ===");
+        System.out.println("Response: " + result.getBody());
+        if (result.getBody() instanceof AuthResponse) {
+            AuthResponse authResponse = (AuthResponse) result.getBody();
+            System.out.println("Role: " + authResponse.getRole());
+            System.out.println("Role class: " + authResponse.getRole().getClass());
+        }
+        System.out.println("===========================");
+
+        return result;
+    }
+}

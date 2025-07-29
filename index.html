@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireHire AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f5f7fa;
+        }
+        header {
+            background-color: #4f46e5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            flex: 1;
+        }
+        .card-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .card {
+            flex: 1;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            color: #333;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #4f46e5;
+        }
+        .card p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+            flex: 1;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4f46e5;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            align-self: flex-start;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #4338ca;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>FireHire AI - Tuyển dụng và tìm việc thông minh</h1>
+    </header>
+    
+    <div class="container">
+        <h2>Chào mừng đến với dự án FireHire AI</h2>
+        <p>Dự án này được chia thành hai phần: Backend (BE) và Frontend (FE). Chọn một trong các liên kết dưới đây để tiếp tục.</p>
+        
+        <div class="card-container">
+            <a href="/BE" class="card">
+                <h2>Backend (BE)</h2>
+                <p>Phần BE của dự án được xây dựng với Spring Boot. Bao gồm các API, kết nối cơ sở dữ liệu và xử lý nghiệp vụ cho ứng dụng.</p>
+                <span class="button">Đi đến Backend</span>
+            </a>
+            
+            <a href="/FE" class="card">
+                <h2>Frontend (FE)</h2>
+                <p>Phần FE của dự án được xây dựng với React. Bao gồm giao diện người dùng, các trang và thành phần tương tác với người dùng.</p>
+                <span class="button">Đi đến Frontend</span>
+            </a>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <h3>Hướng dẫn khởi chạy:</h3>
+            <ol>
+                <li>Đọc hướng dẫn chi tiết trong file <code>README.md</code></li>
+                <li>Khởi chạy BE (Spring Boot): <code>cd BE && .\mvnw.cmd spring-boot:run</code> (PowerShell) hoặc <code>cd BE && mvnw.cmd spring-boot:run</code> (CMD)</li>
+                <li>Khởi chạy FE (React): <code>cd FE && npm install && npm start</code></li>
+            </ol>
+        </div>
+    </div>
+    
+    <footer>
+        &copy; 2025 FireHire AI - Dự án phát triển công nghệ tuyển dụng
+    </footer>
+</body>
+</html>

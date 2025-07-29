@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Login Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group { 
+            margin: 15px 0; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        input, select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 16px;
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover { 
+            background: #0056b3; 
+        }
+        .result { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border-radius: 4px; 
+            white-space: pre-wrap;
+        }
+        .success { 
+            background: #d4edda; 
+            border: 1px solid #c3e6cb; 
+            color: #155724;
+        }
+        .error { 
+            background: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            color: #721c24;
+        }
+        .info { 
+            background: #d1ecf1; 
+            border: 1px solid #bee5eb; 
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Quick Login Test</h1>
+        
+        <div class="form-group">
+            <label for="action">Test Action:</label>
+            <select id="action">
+                <option value="create-employer">Create Test Employer</option>
+                <option value="login-employer">Login as Employer</option>
+                <option value="test-roles">Test Role Serialization</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="test@employer.com" />
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="password123" />
+        </div>
+        
+        <button onclick="executeTest()">Run Test</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        function showResult(content, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = content;
+        }
+        
+        async function executeTest() {
+            const action = document.getElementById('action').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                let result;
+                
+                if (action === 'create-employer') {
+                    result = await createEmployer();
+                } else if (action === 'login-employer') {
+                    result = await loginEmployer(email, password);
+                } else if (action === 'test-roles') {
+                    result = await testRoles();
+                }
+                
+                showResult(result, 'success');
+                
+            } catch (error) {
+                showResult(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createEmployer() {
+            const response = await fetch(`${API_BASE}/debug/create-test-employer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            return `✅ Create Employer Result:
+${JSON.stringify(data, null, 2)}`;
+        }
+        
+        async function loginEmployer(email, password) {
+            const response = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            
+            // Store in localStorage
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('email', data.email);
+                localStorage.setItem('fullName', data.fullName);
+            }
+            
+            // Determine redirect URL
+            let redirectUrl = '/';
+            if (data.role === 'ADMIN') {
+                redirectUrl = '/admin/dashboard';
+            } else if (data.role === 'EMPLOYER') {
+                redirectUrl = '/recruiter/dashboard';
+            } else if (data.role === 'CANDIDATE') {
+                redirectUrl = '/';
+            }
+            
+            return `✅ Login Result:
+${JSON.stringify(data, null, 2)}
+
+🔍 Analysis:
+- Role: "${data.role}" (type: ${typeof data.role})
+- Should redirect to: ${redirectUrl}
+- Stored in localStorage: ${data.token ? 'Yes' : 'No'}
+
+🧪 Role Comparisons:
+- role === 'ADMIN': ${data.role === 'ADMIN'}
+- role === 'EMPLOYER': ${data.role === 'EMPLOYER'}  
+- role === 'CANDIDATE': ${data.role === 'CANDIDATE'}
+
+💾 LocalStorage:
+- token: ${localStorage.getItem('token') ? 'Set' : 'Not set'}
+- role: ${localStorage.getItem('role')}`;
+        }
+        
+        async function testRoles() {
+            const response = await fetch(`${API_BASE}/debug/test-all-roles`);
+            const data = await response.json();
+            
+            return `✅ Role Serialization Test:
+${JSON.stringify(data, null, 2)}`;
+        }
+        
+        // Show current localStorage state on load
+        window.onload = function() {
+            const currentRole = localStorage.getItem('role');
+            if (currentRole) {
+                showResult(`Current auth state:
+- Role: ${currentRole}
+- Token: ${localStorage.getItem('token') ? 'Present' : 'Not set'}
+- User ID: ${localStorage.getItem('userId')}`, 'info');
+            }
+        };
+    </script>
+</body>
+</html>
