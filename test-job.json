@@ -1,0 +1,13 @@
+{
+  "title": "Test Job Backend",
+  "description": "Đây là job test từ backend",
+  "location": "Hà Nội",
+  "salary": "1000-2000 USD",
+  "jobType": "Full-time",
+  "industry": "Công nghệ thông tin",
+  "experienceLevel": "Junior",
+  "skillsRequired": "Java, Spring Boot",
+  "benefits": "Bảo hiểm, thưởng",
+  "status": "ACTIVE",
+  "employerId": 1
+}

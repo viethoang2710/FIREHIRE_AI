@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Posting</title>
+</head>
+<body>
+    <h2>Test Job Posting</h2>
+    <button onclick="testJobPost()">Test Create Job</button>
+    <div id="result"></div>
+
+    <script>
+        async function testJobPost() {
+            const jobData = {
+                title: "Test Job - Frontend Developer",
+                description: "Test job description for debugging",
+                location: "Hà Nội",
+                salary: "1500-2500 USD",
+                jobType: "Full-time",
+                skillsRequired: "React, JavaScript, HTML, CSS",
+                industry: "Công nghệ thông tin",
+                experienceLevel: "Junior",
+                companyName: "Test Company",
+                benefits: "Bảo hiểm y tế, Du lịch hàng năm",
+                employerId: 1  // Ensure employerId is set
+            };
+
+            try {
+                console.log('Sending job data:', jobData);
+                
+                const response = await fetch('http://localhost:8080/api/recruiter/jobs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jobData)
+                });
+
+                const responseData = await response.json();
+                console.log('Response:', responseData);
+                
+                document.getElementById('result').innerHTML = 
+                    '<h3>Response:</h3>' +
+                    '<pre>' + JSON.stringify(responseData, null, 2) + '</pre>';
+
+                if (responseData.success) {
+                    document.getElementById('result').innerHTML += 
+                        '<p style="color: green;">✅ Job created successfully!</p>';
+                } else {
+                    document.getElementById('result').innerHTML += 
+                        '<p style="color: red;">❌ Error: ' + responseData.message + '</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: red;">❌ Network Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

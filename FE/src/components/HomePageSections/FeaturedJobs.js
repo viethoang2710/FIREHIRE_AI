@@ -14,19 +14,36 @@ const FeaturedJobs = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('Fetching featured jobs from API...');
         const response = await jobService.getHotLatestJobs();
-        console.log('Dữ liệu việc làm nổi bật:', response);
+        console.log('Featured jobs API response:', response);
         
         // Kiểm tra và xử lý dữ liệu trả về
         if (response && response.content && Array.isArray(response.content)) {
+          console.log(`Found ${response.content.length} featured jobs`);
           setJobs(response.content);
+        } else if (response && Array.isArray(response)) {
+          // Nếu API trả về mảng trực tiếp
+          console.log(`Found ${response.length} featured jobs (direct array)`);
+          setJobs(response);
         } else {
           console.error('Cấu trúc dữ liệu không đúng:', response);
           setJobs([]);
         }
       } catch (err) {
         console.error('Lỗi khi lấy việc làm nổi bật:', err);
-        setError('Không thể tải dữ liệu việc làm. Vui lòng thử lại sau.');
+        setError('Không thể tải dữ liệu việc làm. Sử dụng dữ liệu mẫu.');
+        
+        // Fallback để hiển thị dữ liệu mẫu khi API không khả dụng
+        // Điều này giúp người dùng vẫn thấy giao diện hoạt động
+        if (process.env.NODE_ENV === 'development') {
+          const mockJobs = [
+            { id: 'mock-1', title: 'Senior Frontend Developer', company: 'Tech Solutions Inc.', location: 'Hà Nội', salary: '2000 - 3000 USD', type: 'Full-time', createdAt: new Date().toISOString() },
+            { id: 'mock-2', title: 'UI/UX Designer', company: 'Creative Agency', location: 'TP. Hồ Chí Minh', salary: '1500 - 2500 USD', type: 'Full-time', createdAt: new Date().toISOString() }
+          ];
+          setJobs(mockJobs);
+        }
       } finally {
         setLoading(false);
       }
@@ -79,8 +96,8 @@ const FeaturedJobs = () => {
             {jobs.map(job => (
               <div key={job.id} className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 p-6 flex space-x-4">
                 <img 
-                  src={job.logo || job.companyLogo} 
-                  alt={`${job.company || 'Company'} logo`} 
+                  src={job.logo || job.companyLogo || 'https://placehold.co/100x100/cccccc/969696?text=Logo'} 
+                  alt={`${job.company || job.companyName || 'Company'} logo`} 
                   className="w-16 h-16 rounded-md object-contain flex-shrink-0 mt-1" 
                   onError={(e) => e.target.src='https://placehold.co/100x100/cccccc/969696?text=Logo'} 
                 />
@@ -96,11 +113,26 @@ const FeaturedJobs = () => {
                     {job.skills && Array.isArray(job.skills) ? job.skills.map(skill => (
                       <span key={skill} className="inline-block bg-gray-200 text-gray-700 text-xs font-semibold mr-2 mb-2 px-2.5 py-0.5 rounded-full">{skill}</span>
                     )) : (
-                      <span className="inline-block bg-gray-200 text-gray-700 text-xs font-semibold mr-2 mb-2 px-2.5 py-0.5 rounded-full">{job.type || 'Full-time'}</span>
+                      <span className="inline-block bg-gray-200 text-gray-700 text-xs font-semibold mr-2 mb-2 px-2.5 py-0.5 rounded-full">
+                        {job.type || job.jobType || 'Full-time'}
+                      </span>
+                    )}
+                    {job.industry && (
+                      <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold mr-2 mb-2 px-2.5 py-0.5 rounded-full">
+                        {job.industry}
+                      </span>
+                    )}
+                    {job.experienceLevel && (
+                      <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold mr-2 mb-2 px-2.5 py-0.5 rounded-full">
+                        {job.experienceLevel}
+                      </span>
                     )}
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
-                    Đăng {job.date || job.createdAt || new Date().toLocaleDateString()}
+                    Đăng {job.createdDate || job.createdAt || job.date || new Date().toLocaleDateString()}
+                    {job.status && job.status !== 'ACTIVE' && job.status !== 'Đang hiển thị' && (
+                      <span className="ml-2 text-red-500">• {job.status}</span>
+                    )}
                   </p>
                 </div>
                 <button

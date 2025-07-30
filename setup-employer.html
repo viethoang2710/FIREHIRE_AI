@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Employer Session - FireHire AI</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        h1 { color: #333; text-align: center; }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #0056b3; }
+        .success { background: #28a745; }
+        .danger { background: #dc3545; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            overflow-x: auto; 
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Setup Employer Session - FireHire AI</h1>
+        <p>Trang này giúp setup session cho nhà tuyển dụng để test chức năng đăng tin.</p>
+        
+        <div id="current-status" class="status info">
+            <strong>Current Status:</strong> <span id="status-text">Checking...</span>
+        </div>
+        
+        <h3>🔑 Setup Actions:</h3>
+        <button onclick="setupEmployerSession()">Setup Employer Session (ID: 1)</button>
+        <button onclick="setupEmployerSession(2)">Setup Employer Session (ID: 2)</button>
+        <button onclick="clearSession()" class="danger">Clear All Sessions</button>
+        <button onclick="checkStatus()">Check Current Status</button>
+        
+        <h3>🚀 Quick Actions:</h3>
+        <button onclick="testBackend()" class="success">Test Backend Connection</button>
+        <button onclick="testGetJobs()" class="success">Test Get Jobs API</button>
+        <button onclick="testCreateJob()" class="success">Test Create Job API</button>
+        <button onclick="goToRecruiterDashboard()">Go to Recruiter Dashboard</button>
+        
+        <h3>📊 Current localStorage Data:</h3>
+        <pre id="localStorage-data"></pre>
+        
+        <h3>📜 Console Logs:</h3>
+        <pre id="console-logs"></pre>
+    </div>
+
+    <script>
+        let logContainer = document.getElementById('console-logs');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logContainer.textContent += entry;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(entry);
+        }
+        
+        function updateLocalStorageDisplay() {
+            const data = {
+                current_employer_id: localStorage.getItem('current_employer_id'),
+                user_id: localStorage.getItem('user_id'),
+                employerId: localStorage.getItem('employerId'),
+                token: localStorage.getItem('token'),
+                role: localStorage.getItem('role'),
+                userType: localStorage.getItem('userType'),
+                username: localStorage.getItem('username')
+            };
+            document.getElementById('localStorage-data').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function setupEmployerSession(employerId = 1) {
+            log(`Setting up employer session with ID: ${employerId}`, 'info');
+            
+            // Set multiple possible keys for compatibility
+            localStorage.setItem('current_employer_id', employerId.toString());
+            localStorage.setItem('user_id', employerId.toString());
+            localStorage.setItem('employerId', employerId.toString());
+            localStorage.setItem('role', 'EMPLOYER');
+            localStorage.setItem('userType', 'employer');
+            localStorage.setItem('username', `employer${employerId}`);
+            localStorage.setItem('token', 'mock-jwt-token-for-testing');
+            
+            log(`✅ Employer session setup completed for ID: ${employerId}`, 'success');
+            updateLocalStorageDisplay();
+            checkStatus();
+        }
+        
+        function clearSession() {
+            log('Clearing all session data...', 'info');
+            
+            const keysToRemove = [
+                'current_employer_id', 'user_id', 'employerId', 'role', 
+                'userType', 'username', 'token'
+            ];
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            log('✅ Session cleared', 'success');
+            updateLocalStorageDisplay();
+            checkStatus();
+        }
+        
+        function checkStatus() {
+            const employerId = localStorage.getItem('current_employer_id') || 
+                               localStorage.getItem('user_id') || 
+                               localStorage.getItem('employerId');
+            
+            const role = localStorage.getItem('role');
+            const statusEl = document.getElementById('status-text');
+            const containerEl = document.getElementById('current-status');
+            
+            if (employerId && role === 'EMPLOYER') {
+                statusEl.textContent = `✅ Ready - Employer ID: ${employerId}`;
+                containerEl.className = 'status success';
+                log(`Status: Ready - Employer ID: ${employerId}`, 'success');
+            } else {
+                statusEl.textContent = '❌ Not Ready - No employer session found';
+                containerEl.className = 'status error';
+                log('Status: Not Ready - Missing employer session', 'error');
+            }
+        }
+        
+        async function testBackend() {
+            log('Testing backend connection...', 'info');
+            try {
+                const response = await fetch('http://localhost:8080/api/jobs/hot-jobs?limit=1');
+                const data = await response.json();
+                if (data.success !== undefined) {
+                    log('✅ Backend connected successfully', 'success');
+                    log(`Backend response: ${JSON.stringify(data)}`, 'info');
+                } else {
+                    log('⚠️ Backend responded but format unexpected', 'warning');
+                }
+            } catch (error) {
+                log(`❌ Backend connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testGetJobs() {
+            log('Testing get jobs API...', 'info');
+            const employerId = localStorage.getItem('current_employer_id') || '1';
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/recruiter/jobs?employerId=${employerId}`);
+                const data = await response.json();
+                log(`✅ Get jobs successful: ${data.data?.length || 0} jobs found`, 'success');
+                log(`Jobs data: ${JSON.stringify(data)}`, 'info');
+            } catch (error) {
+                log(`❌ Get jobs failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCreateJob() {
+            log('Testing create job API...', 'info');
+            const employerId = localStorage.getItem('current_employer_id') || '1';
+            
+            const jobData = {
+                title: `Test Job ${Date.now()}`,
+                description: 'Đây là job test từ setup page',
+                location: 'Hà Nội',
+                salary: '1000-2000 USD',
+                jobType: 'Full-time',
+                industry: 'Công nghệ thông tin',
+                experienceLevel: 'Junior',
+                skillsRequired: 'React, JavaScript',
+                benefits: 'Bảo hiểm, thưởng',
+                status: 'ACTIVE',
+                employerId: parseInt(employerId)
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/recruiter/jobs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jobData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`✅ Job created successfully! ID: ${result.data?.id}`, 'success');
+                    log(`Created job: ${JSON.stringify(result)}`, 'info');
+                } else {
+                    const error = await response.text();
+                    log(`❌ Create job failed: ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Create job error: ${error.message}`, 'error');
+            }
+        }
+        
+        function goToRecruiterDashboard() {
+            const employerId = localStorage.getItem('current_employer_id');
+            if (!employerId) {
+                alert('Please setup employer session first!');
+                return;
+            }
+            log('Redirecting to recruiter dashboard...', 'info');
+            window.open('http://localhost:3000/recruiter-dashboard', '_blank');
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            log('🚀 Setup page initialized', 'info');
+            updateLocalStorageDisplay();
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

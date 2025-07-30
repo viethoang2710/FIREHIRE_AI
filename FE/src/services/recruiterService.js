@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as dataStorageUtils from '../utils/dataStorageUtils';
+import * as persistentStorage from '../utils/persistentStorage';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -109,22 +110,21 @@ const updateLocalStorageJobs = (storageKey, jobData, action, jobId = null) => {
  */
 const getRecruiterJobs = async () => {
   try {
-    // Lấy user ID hiện tại để tạo key lưu trữ riêng
-    const currentUserId = localStorage.getItem('current_employer_id');
-    const storageKey = currentUserId ? `recruiterJobs_${currentUserId}` : 'recruiterJobs';
+    // Lấy user ID với multiple fallbacks
+    let currentUserId = localStorage.getItem('current_employer_id') || 
+                       localStorage.getItem('user_id') || 
+                       localStorage.getItem('employerId') || '1'; // Default fallback
+    
+    const storageKey = `recruiterJobs_${currentUserId}`;
     
     console.log('Đang lấy danh sách tin tuyển dụng từ API...');
-    console.log(`Sử dụng key lưu trữ: ${storageKey} cho user ID: ${currentUserId || 'không xác định'}`);
+    console.log(`Sử dụng key lưu trữ: ${storageKey} cho user ID: ${currentUserId}`);
     
     // Đảm bảo dữ liệu đã được di chuyển sang key riêng của user (cho tương thích ngược)
-    if (currentUserId) {
-      dataStorageUtils.migrateJobsToUserStorage(currentUserId);
-    }
+    dataStorageUtils.migrateJobsToUserStorage(currentUserId);
     
-    // Gọi API để lấy dữ liệu từ database
-    const apiUrl = currentUserId ? 
-      `${API_URL}/jobs?employerId=${currentUserId}` : 
-      `${API_URL}/jobs`;
+    // Gọi API để lấy dữ liệu từ database với employerId
+    const apiUrl = `${API_URL}/recruiter/jobs?employerId=${currentUserId}`;
     
     console.log(`Gọi API: ${apiUrl}`);
     const response = await axios.get(apiUrl, getAuthHeader());
@@ -168,7 +168,7 @@ const getRecruiterJobs = async () => {
         status: job.status === "ACTIVE" ? "Đang hiển thị" : job.status,
         applicants: job.applicationCount || 0,
         description: job.description,
-        requirements: job.skillsRequired,
+        requirements: job.skillsRequired || job.requirements || '', // Handle both fields
         benefits: job.benefits,
         publishedAt: job.createdDate,
         createdAt: job.createdDate,
@@ -179,13 +179,16 @@ const getRecruiterJobs = async () => {
       
       console.log(`Đã lấy thành công ${frontendJobs.length} tin tuyển dụng từ database`);
       
+      // Sync với persistent storage
+      const syncedJobs = await persistentStorage.syncJobsWithDatabase(currentUserId, frontendJobs);
+      
       // Lưu vào localStorage để cải thiện hiệu suất và hỗ trợ offline
       if (currentUserId) {
         // Lưu vào key riêng theo user ID
-        localStorage.setItem(storageKey, JSON.stringify(frontendJobs));
+        localStorage.setItem(storageKey, JSON.stringify(syncedJobs));
         
         // Lưu vào key chung cho tương thích ngược
-        localStorage.setItem('recruiterJobs', JSON.stringify(frontendJobs));
+        localStorage.setItem('recruiterJobs', JSON.stringify(syncedJobs));
         
         // Đảm bảo lưu ID user vào danh sách đã biết
         try {
@@ -199,11 +202,11 @@ const getRecruiterJobs = async () => {
         }
       } else {
         // Nếu không có user ID, chỉ lưu vào key chung
-        localStorage.setItem('recruiterJobs', JSON.stringify(frontendJobs));
+        localStorage.setItem('recruiterJobs', JSON.stringify(syncedJobs));
       }
       
       console.log(`Đã lưu dữ liệu vào localStorage với key: ${storageKey}`);
-      return frontendJobs;
+      return syncedJobs;
     } else {
       console.error('Không có dữ liệu từ API');
       throw new Error('Không có dữ liệu');
@@ -222,6 +225,13 @@ const getRecruiterJobs = async () => {
     // Sử dụng hàm từ dataStorageUtils nếu có user ID
     if (currentUserId) {
       try {
+        // Thử lấy từ persistent storage trước
+        const persistentJobs = persistentStorage.getJobsFromPersistentStorage(currentUserId);
+        if (persistentJobs.length > 0) {
+          console.log(`Đã khôi phục ${persistentJobs.length} tin tuyển dụng từ persistent storage cho user ID ${currentUserId}`);
+          return persistentJobs;
+        }
+        
         // Đảm bảo dữ liệu đã được chuyển đổi từ key chung sang key riêng
         dataStorageUtils.migrateJobsToUserStorage(currentUserId);
         
@@ -295,15 +305,26 @@ const getRecruiterJobs = async () => {
  */
 const createJob = async (jobData) => {
   try {
-    // Lấy user ID hiện tại để tạo key lưu trữ riêng
-    const currentUserId = localStorage.getItem('current_employer_id');
-    const storageKey = currentUserId ? `recruiterJobs_${currentUserId}` : 'recruiterJobs';
+    // Lấy employerId từ nhiều nguồn với fallback logic như trong RecruiterDashboardPage
+    let employerId = parseInt(localStorage.getItem('current_employer_id')) || 
+                     parseInt(localStorage.getItem('user_id')) || 
+                     parseInt(localStorage.getItem('employerId')) || 1; // Default fallback
+    
+    // Ensure employerId is not null/undefined/NaN
+    if (!employerId || isNaN(employerId)) {
+      employerId = 1; // Force default value
+    }
+    
+    console.log('Service using employerId:', employerId);
+    
+    // Tạo key lưu trữ riêng
+    const storageKey = employerId ? `recruiterJobs_${employerId}` : 'recruiterJobs';
     
     // Đảm bảo rằng trạng thái mặc định là "Đang hiển thị"
     const jobDataToSubmit = { 
       ...jobData,
       status: jobData.status || "ACTIVE", // Sử dụng ACTIVE để phù hợp với backend
-      employerId: parseInt(currentUserId) || null // Đảm bảo ID đúng định dạng số nguyên
+      employerId: employerId // Đảm bảo ID đúng định dạng số nguyên
     };
     
     // Chuyển đổi các trường để phù hợp với backend API
@@ -324,7 +345,8 @@ const createJob = async (jobData) => {
     console.log('Đang đăng tin tuyển dụng mới lên API:', apiJobData);
     let response;
     try {
-      response = await axios.post(`${API_URL}/jobs`, apiJobData, getAuthHeader());
+      // Sử dụng endpoint recruiter/jobs thay vì jobs trực tiếp
+      response = await axios.post(`${API_URL}/recruiter/jobs`, apiJobData, getAuthHeader());
     } catch (err) {
       // Nếu backend trả về lỗi, log chi tiết và ném lỗi rõ ràng
       if (err.response && err.response.data) {
@@ -383,6 +405,9 @@ const createJob = async (jobData) => {
 
     // Cập nhật localStorage để UI hiển thị ngay lập tức (cache)
     try {
+      // Lưu vào persistent storage
+      persistentStorage.saveJobToPersistentStorage(frontendJob, parseInt(employerId));
+      
       // Cập nhật key chính
       updateLocalStorageJobs(storageKey, frontendJob, 'add');
 
@@ -391,7 +416,7 @@ const createJob = async (jobData) => {
         updateLocalStorageJobs('recruiterJobs', frontendJob, 'add');
       }
 
-      console.log(`Đã cập nhật tin tuyển dụng mới vào localStorage với key: ${storageKey}`);
+      console.log(`Đã cập nhật tin tuyển dụng mới vào localStorage và persistent storage với key: ${storageKey}`);
     } catch (e) {
       console.error('Lỗi khi cập nhật localStorage sau khi thêm tin mới:', e);
     }

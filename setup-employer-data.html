@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Employer Data</title>
+</head>
+<body>
+    <h2>Setup Employer Data for Testing</h2>
+    <button onclick="setupEmployerData()">Setup Employer Data</button>
+    <button onclick="checkLocalStorage()">Check Current Data</button>
+    <div id="output"></div>
+
+    <script>
+        function setupEmployerData() {
+            // Setup employer data in localStorage
+            localStorage.setItem('current_employer_id', '1');
+            localStorage.setItem('user_id', '1');
+            localStorage.setItem('employerId', '1');
+            localStorage.setItem('user_role', 'EMPLOYER');
+            localStorage.setItem('company_name', 'Tech Solutions Inc.');
+            
+            document.getElementById('output').innerHTML = '<p style="color: green;">✅ Employer data has been set up successfully!</p>';
+        }
+
+        function checkLocalStorage() {
+            const data = {
+                current_employer_id: localStorage.getItem('current_employer_id'),
+                user_id: localStorage.getItem('user_id'),
+                employerId: localStorage.getItem('employerId'),
+                user_role: localStorage.getItem('user_role'),
+                company_name: localStorage.getItem('company_name')
+            };
+            
+            document.getElementById('output').innerHTML = 
+                '<h3>Current localStorage Data:</h3>' +
+                '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+
+        // Auto check on page load
+        window.onload = function() {
+            checkLocalStorage();
+        }
+    </script>
+</body>
+</html>

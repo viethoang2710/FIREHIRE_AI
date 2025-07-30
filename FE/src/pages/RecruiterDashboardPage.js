@@ -21,7 +21,10 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
     description: '',
     requirements: '',
     benefits: '',
-    type: 'Full-time'
+    type: 'Full-time',
+    industry: 'Công nghệ thông tin',
+    experienceLevel: 'Junior',
+    companyName: 'Tech Solutions Inc.'
   });
   
   // Nếu đang chỉnh sửa, điền dữ liệu vào form
@@ -32,9 +35,12 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
         location: jobData.location || '',
         salary: jobData.salary || '',
         description: jobData.description || 'Mô tả công việc...',
-        requirements: jobData.requirements || 'Yêu cầu công việc...',
+        requirements: jobData.requirements || jobData.skillsRequired || 'Yêu cầu công việc...', // Handle both fields
         benefits: jobData.benefits || '',
-        type: jobData.type || 'Full-time'
+        type: jobData.type || jobData.jobType || 'Full-time', // Handle both fields
+        industry: jobData.industry || 'Công nghệ thông tin',
+        experienceLevel: jobData.experienceLevel || 'Junior',
+        companyName: jobData.companyName || 'Tech Solutions Inc.'
       });
     }
   }, [isEdit, jobData]);
@@ -53,9 +59,24 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Lấy employerId từ localStorage để đảm bảo đúng với backend
-    const employerId = parseInt(localStorage.getItem('current_employer_id')) || null;
-    // Tạo đối tượng dữ liệu tin tuyển dụng
+    // Lấy employerId từ localStorage với fallback values
+    let employerId = parseInt(localStorage.getItem('current_employer_id')) || 
+                     parseInt(localStorage.getItem('user_id')) || 
+                     parseInt(localStorage.getItem('employerId')) || 1; // Default fallback
+    
+    // Ensure employerId is not null/undefined/NaN
+    if (!employerId || isNaN(employerId)) {
+      employerId = 1; // Force default value
+    }
+    
+    console.log('Using employerId:', employerId);
+    console.log('localStorage debug:', {
+      current_employer_id: localStorage.getItem('current_employer_id'),
+      user_id: localStorage.getItem('user_id'),
+      employerId_storage: localStorage.getItem('employerId')
+    });
+    
+    // Tạo đối tượng dữ liệu tin tuyển dụng với đầy đủ field cho database
     const jobDataToSend = {
       title: formData.jobTitle,
       location: formData.location,
@@ -64,7 +85,10 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
       requirements: formData.requirements,
       benefits: formData.benefits || "Môi trường làm việc chuyên nghiệp, thân thiện",
       type: formData.type,
-      status: isEdit ? (jobData?.status || "Đang hiển thị") : "Đang hiển thị",
+      industry: formData.industry,
+      experienceLevel: formData.experienceLevel,
+      companyName: formData.companyName,
+      status: isEdit ? (jobData?.status || "ACTIVE") : "ACTIVE", // Use ACTIVE for database
       employerId: employerId
     };
     
@@ -139,10 +163,6 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">Tên công ty</label>
-              <input type="text" id="companyName" className="mt-1 input-field w-full p-2 border rounded bg-gray-100" value="Tech Solutions Inc." disabled />
-            </div>
-            <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700">Địa điểm làm việc</label>
               <input 
                 type="text" 
@@ -154,18 +174,18 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
                 required
               />
             </div>
-          </div>
-          <div>
-            <label htmlFor="salary" className="block text-sm font-medium text-gray-700">Mức lương</label>
-            <input 
-              type="text" 
-              id="salary" 
-              className="mt-1 input-field w-full p-2 border rounded" 
-              placeholder="VD: 20-30 triệu hoặc 'Thương lượng'"
-              value={formData.salary}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <label htmlFor="salary" className="block text-sm font-medium text-gray-700">Mức lương</label>
+              <input 
+                type="text" 
+                id="salary" 
+                className="mt-1 input-field w-full p-2 border rounded" 
+                placeholder="VD: 20-30 triệu hoặc 'Thương lượng'"
+                value={formData.salary}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="type" className="block text-sm font-medium text-gray-700">Loại hình công việc</label>
@@ -183,6 +203,60 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
               <option value="Internship">Thực tập</option>
             </select>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="industry" className="block text-sm font-medium text-gray-700">Ngành nghề</label>
+              <select 
+                id="industry" 
+                className="mt-1 input-field w-full p-2 border rounded"
+                value={formData.industry}
+                onChange={handleChange}
+                required
+              >
+                <option value="Công nghệ thông tin">Công nghệ thông tin</option>
+                <option value="Tài chính - Ngân hàng">Tài chính - Ngân hàng</option>
+                <option value="Marketing - Truyền thông">Marketing - Truyền thông</option>
+                <option value="Giáo dục - Đào tạo">Giáo dục - Đào tạo</option>
+                <option value="Y tế - Sức khỏe">Y tế - Sức khỏe</option>
+                <option value="Xây dựng - Kiến trúc">Xây dựng - Kiến trúc</option>
+                <option value="Bán lẻ - Thương mại">Bán lẻ - Thương mại</option>
+                <option value="Du lịch - Khách sạn">Du lịch - Khách sạn</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700">Kinh nghiệm yêu cầu</label>
+              <select 
+                id="experienceLevel" 
+                className="mt-1 input-field w-full p-2 border rounded"
+                value={formData.experienceLevel}
+                onChange={handleChange}
+                required
+              >
+                <option value="Không yêu cầu">Không yêu cầu kinh nghiệm</option>
+                <option value="Fresher">Fresher (0-1 năm)</option>
+                <option value="Junior">Junior (1-3 năm)</option>
+                <option value="Middle">Middle (3-5 năm)</option>
+                <option value="Senior">Senior (5+ năm)</option>
+                <option value="Lead/Manager">Lead/Manager</option>
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">Tên công ty</label>
+            <input 
+              type="text" 
+              id="companyName" 
+              className="mt-1 input-field w-full p-2 border rounded" 
+              placeholder="VD: Tech Solutions Inc."
+              value={formData.companyName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">Mô tả công việc</label>
             <textarea 
@@ -528,6 +602,17 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
 
 // --- Component: Xem chi tiết ứng viên ---
 const ViewJobDetailModal = ({ isOpen, onClose, job }) => {
+  // Debug: log job data structure
+  useEffect(() => {
+    if (isOpen && job) {
+      console.log('ViewJobDetailModal - Job data:', job);
+      console.log('- description:', job.description);
+      console.log('- requirements:', job.requirements);
+      console.log('- skillsRequired:', job.skillsRequired);
+      console.log('- benefits:', job.benefits);
+    }
+  }, [isOpen, job]);
+  
   if (!isOpen || !job) return null;
   
   return (
@@ -556,27 +641,39 @@ const ViewJobDetailModal = ({ isOpen, onClose, job }) => {
           <div className="border-t pt-4">
             <h4 className="font-semibold text-gray-800 mb-2">Mô tả công việc</h4>
             <p className="text-gray-700 whitespace-pre-line">
-              Mô tả chi tiết về vị trí {job.title}...
+              {job.description || `Mô tả chi tiết về vị trí ${job.title}...`}
             </p>
           </div>
           
           <div className="border-t pt-4">
             <h4 className="font-semibold text-gray-800 mb-2">Yêu cầu</h4>
-            <ul className="list-disc pl-5 text-gray-700 space-y-1">
-              <li>Có kinh nghiệm làm việc với {job.title}</li>
-              <li>Thành thạo các công nghệ liên quan</li>
-              <li>Kỹ năng làm việc nhóm tốt</li>
-            </ul>
+            <div className="text-gray-700">
+              {job.requirements ? (
+                <div className="whitespace-pre-line">{job.requirements}</div>
+              ) : (
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Có kinh nghiệm làm việc với {job.title}</li>
+                  <li>Thành thạo các công nghệ liên quan</li>
+                  <li>Kỹ năng làm việc nhóm tốt</li>
+                </ul>
+              )}
+            </div>
           </div>
           
           <div className="border-t pt-4">
             <h4 className="font-semibold text-gray-800 mb-2">Quyền lợi</h4>
-            <ul className="list-disc pl-5 text-gray-700 space-y-1">
-              <li>Mức lương cạnh tranh: {job.salary}</li>
-              <li>Bảo hiểm đầy đủ theo quy định</li>
-              <li>Môi trường làm việc chuyên nghiệp</li>
-              <li>Cơ hội học hỏi và phát triển</li>
-            </ul>
+            <div className="text-gray-700">
+              {job.benefits ? (
+                <div className="whitespace-pre-line">{job.benefits}</div>
+              ) : (
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Mức lương cạnh tranh: {job.salary}</li>
+                  <li>Bảo hiểm đầy đủ theo quy định</li>
+                  <li>Môi trường làm việc chuyên nghiệp</li>
+                  <li>Cơ hội học hỏi và phát triển</li>
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>

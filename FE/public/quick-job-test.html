@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Job Creation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .result {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quick Job Creation Test</h1>
+        
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li>First setup localStorage data (click Setup button)</li>
+            <li>Then test job creation (click Test Job Creation button)</li>
+            <li>Check the results below</li>
+        </ol>
+        
+        <button onclick="setupLocalStorage()">1. Setup localStorage</button>
+        <button onclick="testJobCreation()">2. Test Job Creation</button>
+        <button onclick="checkDatabase()">3. Check Database Status</button>
+        
+        <div id="result" class="result">Ready to test...</div>
+    </div>
+
+    <script>
+        function setupLocalStorage() {
+            localStorage.setItem('current_employer_id', '1');
+            localStorage.setItem('user_id', '1');
+            localStorage.setItem('employerId', '1');
+            localStorage.setItem('user_email', 'recruiter@example.com');
+            localStorage.setItem('user_role', 'RECRUITER');
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('authToken', 'mock-jwt-token-123');
+            
+            document.getElementById('result').innerHTML = '✓ localStorage setup complete!\n\nData set:\n' + 
+                JSON.stringify({
+                    current_employer_id: localStorage.getItem('current_employer_id'),
+                    user_id: localStorage.getItem('user_id'),
+                    employerId: localStorage.getItem('employerId'),
+                    user_role: localStorage.getItem('user_role')
+                }, null, 2);
+        }
+        
+        async function testJobCreation() {
+            try {
+                document.getElementById('result').innerHTML = 'Testing job creation...\n';
+                
+                // Test employerId logic first
+                let employerId = parseInt(localStorage.getItem('current_employer_id')) || 
+                                 parseInt(localStorage.getItem('user_id')) || 
+                                 parseInt(localStorage.getItem('employerId')) || 1;
+                
+                if (!employerId || isNaN(employerId)) {
+                    employerId = 1;
+                }
+                
+                const jobData = {
+                    employerId: employerId,
+                    title: "Test Job from Quick Test Page",
+                    description: "This is a test job posting created from the quick test page",
+                    location: "Ho Chi Minh City",
+                    salary: "15-25 million VND",
+                    requirements: "Testing skills required",
+                    benefits: "Great testing environment",
+                    type: "Full-time",
+                    industry: "Software Testing",
+                    experienceLevel: "Junior",
+                    companyName: "Test Company Ltd",
+                    status: "ACTIVE"
+                };
+                
+                document.getElementById('result').innerHTML += 'Sending POST request with data:\n' + 
+                    JSON.stringify(jobData, null, 2) + '\n\n';
+                
+                const response = await fetch('http://localhost:8080/api/recruiter/jobs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jobData)
+                });
+                
+                const responseData = await response.json();
+                
+                document.getElementById('result').innerHTML += 'Response status: ' + response.status + '\n';
+                document.getElementById('result').innerHTML += 'Response data:\n' + 
+                    JSON.stringify(responseData, null, 2) + '\n\n';
+                
+                if (response.ok && responseData.success) {
+                    document.getElementById('result').innerHTML += '✅ SUCCESS: Job created successfully!\n';
+                    document.getElementById('result').innerHTML += 'New job ID: ' + responseData.data.id + '\n';
+                } else {
+                    document.getElementById('result').innerHTML += '❌ ERROR: ' + (responseData.message || 'Unknown error') + '\n';
+                }
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML += '❌ NETWORK ERROR: ' + error.message + '\n';
+                console.error('Test error:', error);
+            }
+        }
+        
+        async function checkDatabase() {
+            try {
+                document.getElementById('result').innerHTML = 'Checking database via API...\n';
+                
+                const response = await fetch('http://localhost:8080/api/recruiter/jobs?employerId=1', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const responseData = await response.json();
+                
+                document.getElementById('result').innerHTML += 'Database check response:\n' + 
+                    JSON.stringify(responseData, null, 2) + '\n\n';
+                
+                if (response.ok && responseData.success && responseData.data) {
+                    document.getElementById('result').innerHTML += '✅ Database has ' + responseData.data.length + ' jobs for employer 1\n';
+                } else {
+                    document.getElementById('result').innerHTML += '❌ Could not retrieve jobs from database\n';
+                }
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML += '❌ DATABASE CHECK ERROR: ' + error.message + '\n';
+                console.error('Database check error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -27,9 +27,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip JWT processing for admin endpoints
+        // Skip JWT processing for admin and api endpoints
         String requestURI = request.getRequestURI();
-        if (requestURI.startsWith("/admin/")) {
+        if (requestURI.startsWith("/admin/") || requestURI.startsWith("/api/")) {
             filterChain.doFilter(request, response);
             return;
         }

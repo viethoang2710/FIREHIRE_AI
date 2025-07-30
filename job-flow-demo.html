@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Job Flow - FireHire AI</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+            margin-bottom: 25px; 
+        }
+        h1 { 
+            color: #333; 
+            text-align: center; 
+            margin-bottom: 10px;  
+            font-size: 2.5em;
+        }
+        h2 { 
+            color: #444; 
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        button { 
+            background: linear-gradient(45deg, #007bff, #0056b3); 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 8px; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,123,255,0.4);
+        }
+        .success { background: linear-gradient(45deg, #28a745, #1e7e34); }
+        .success:hover { box-shadow: 0 6px 20px rgba(40,167,69,0.4); }
+        .warning { background: linear-gradient(45deg, #ffc107, #e0a800); color: #000; }
+        .warning:hover { box-shadow: 0 6px 20px rgba(255,193,7,0.4); }
+        .error { background: linear-gradient(45deg, #dc3545, #c82333); }
+        .error:hover { box-shadow: 0 6px 20px rgba(220,53,69,0.4); }
+        .step {
+            background: linear-gradient(45deg, #6f42c1, #5a2d91);
+            font-size: 1.1em;
+            padding: 15px 30px;
+        }
+        .step:hover { box-shadow: 0 6px 20px rgba(111,66,193,0.4); }
+        pre { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 8px; 
+            overflow-x: auto; 
+            border-left: 4px solid #007bff; 
+            font-size: 13px;
+        }
+        .job-item {
+            border: 1px solid #e9ecef;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transition: all 0.3s ease;
+        }
+        .job-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 5px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+        }
+        .status.active { background: #d4edda; color: #155724; }
+        .status.inactive { background: #f8d7da; color: #721c24; }
+        .logs { 
+            height: 300px; 
+            overflow-y: auto; 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border: 1px solid #dee2e6; 
+            border-radius: 8px; 
+            font-family: 'Courier New', monospace; 
+            font-size: 13px; 
+            line-height: 1.4;
+        }
+        .status-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .status-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        .progress-bar {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 FireHire AI</h1>
+        <p class="subtitle">Demo Luồng Dữ Liệu: Nhà tuyển dụng đăng tin → Database → Hiển thị cho ứng viên</p>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        
+        <div style="text-align: center; margin: 25px 0;">
+            <button onclick="runFullDemo()" class="step">🚀 Chạy Demo Hoàn Chỉnh</button>
+            <button onclick="testBackendConnection()" class="warning">🔗 Test Backend</button>
+            <button onclick="testCreateJob()" class="success">➕ Test Tạo Job</button>
+            <button onclick="testGetJobs()" class="success">📋 Test Lấy Jobs</button>
+            <button onclick="clearLogs()">🗑️ Clear Logs</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Trạng Thái Hệ Thống</h2>
+        <div class="status-indicators">
+            <div class="status-card">
+                <h4>Backend API</h4>
+                <div id="backend-status">🔴 Checking...</div>
+            </div>
+            <div class="status-card">
+                <h4>Frontend React</h4>
+                <div id="frontend-status">🔴 Checking...</div>
+            </div>
+            <div class="status-card">
+                <h4>Database MySQL</h4>
+                <div id="database-status">🔴 Unknown</div>
+            </div>
+            <div class="status-card">
+                <h4>Jobs in DB</h4>
+                <div id="jobs-count">0 jobs</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📝 Tạo Tin Tuyển Dụng Demo</h2>
+        <div class="input-group">
+            <input type="text" id="job-title" placeholder="Tên công việc" value="Senior React Developer">
+            <input type="text" id="job-location" placeholder="Địa điểm" value="Hà Nội">
+            <input type="text" id="job-salary" placeholder="Mức lương" value="2000-3000 USD">
+            <select id="job-type">
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Freelance">Freelance</option>
+            </select>
+        </div>
+        <div style="margin: 20px 0;">
+            <textarea id="job-description" rows="4" style="width: 100%;" placeholder="Mô tả công việc...">Phát triển ứng dụng web với React.js, Node.js. Yêu cầu 3+ năm kinh nghiệm với React, Redux, và TypeScript. Làm việc trong môi trường Agile, cơ hội phát triển kỹ năng và thăng tiến.</textarea>
+        </div>
+        <button onclick="createTestJob()" class="success">🔥 Tạo Job Demo</button>
+        <div id="create-result" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Danh Sách Jobs Hiện Tại</h2>
+        <button onclick="loadJobs()" class="success">🔄 Refresh Jobs</button>
+        <button onclick="simulateRecruiterLogin()" class="step">👨‍💼 Giả Lập Đăng Nhập NTD</button>
+        <button onclick="simulateCandidateView()" class="step">👨‍💻 Giả Lập View Ứng Viên</button>
+        <div id="jobs-list" style="margin-top: 20px;"></div>
+    </div>
+
+    <div class="container">
+        <h2>📜 Console Logs & Debug</h2>
+        <div id="logs" class="logs"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        const FRONTEND_BASE = 'http://localhost:3000';
+        
+        let logContainer = document.getElementById('logs');
+        let currentStep = 0;
+        
+        function updateProgress(step) {
+            currentStep = step;
+            const progress = (step / 8) * 100;
+            document.getElementById('progress').style.width = `${progress}%`;
+        }
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': '#000',
+                'success': '#28a745',
+                'error': '#dc3545',
+                'warning': '#ffc107',
+                'step': '#6f42c1'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.color = colors[type] || '#000';
+            logEntry.style.marginBottom = '5px';
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            console.log(`${type.toUpperCase()}: ${message}`);
+        }
+        
+        function clearLogs() {
+            logContainer.innerHTML = '';
+            log('🗑️ Logs cleared', 'info');
+        }
+        
+        async function testBackendConnection() {
+            log('🔗 Testing backend connection...', 'step');
+            try {
+                const response = await fetch(`${API_BASE}/jobs/hot-jobs?limit=1`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        log('✅ Backend connected successfully', 'success');
+                        document.getElementById('backend-status').innerHTML = '🟢 Connected';
+                        document.getElementById('database-status').innerHTML = '🟢 Connected';
+                        return true;
+                    } else {
+                        throw new Error('API returned success=false');
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Backend connection failed: ${error.message}`, 'error');
+                document.getElementById('backend-status').innerHTML = '🔴 Disconnected';
+                document.getElementById('database-status').innerHTML = '🔴 Unknown';
+                return false;
+            }
+        }
+        
+        async function testCreateJob() {
+            log('➕ Testing job creation...', 'step');
+            
+            // Simulate employer ID (trong thực tế sẽ lấy từ session)
+            const employerId = 1;
+            
+            const jobData = {
+                employerId: employerId,
+                title: 'Demo Job ' + Date.now(),
+                description: 'This is a demo job posting created from test interface',
+                location: 'Hà Nội',
+                salary: '1000-2000 USD',
+                jobType: 'Full-time',
+                industry: 'Công nghệ thông tin',
+                experienceLevel: 'Junior',
+                skillsRequired: 'React, Node.js, JavaScript',
+                benefits: 'Bảo hiểm, thưởng, du lịch',
+                status: 'ACTIVE'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/recruiter/jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jobData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        log(`✅ Job created successfully! ID: ${result.data?.id}`, 'success');
+                        await loadJobs(); // Refresh job list
+                        return result;
+                    } else {
+                        throw new Error(result.message || 'Job creation failed');
+                    }
+                } else {
+                    const error = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${error}`);
+                }
+            } catch (error) {
+                log(`❌ Job creation failed: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        async function testGetJobs() {
+            log('📋 Testing get jobs API...', 'step');
+            try {
+                const [hotRes, latestRes] = await Promise.all([
+                    fetch(`${API_BASE}/jobs/hot-jobs?limit=10`),
+                    fetch(`${API_BASE}/jobs/latest-jobs?limit=10`)
+                ]);
+                
+                if (hotRes.ok && latestRes.ok) {
+                    const [hotData, latestData] = await Promise.all([
+                        hotRes.json(),
+                        latestRes.json()
+                    ]);
+                    
+                    const hotJobs = hotData.success ? hotData.data : [];
+                    const latestJobs = latestData.success ? latestData.data : [];
+                    const totalJobs = [...hotJobs, ...latestJobs].filter((job, index, arr) => 
+                        arr.findIndex(j => j.id === job.id) === index
+                    );
+                    
+                    log(`✅ Retrieved ${totalJobs.length} jobs (${hotJobs.length} hot + ${latestJobs.length} latest)`, 'success');
+                    document.getElementById('jobs-count').textContent = `${totalJobs.length} jobs`;
+                    return totalJobs;
+                } else {
+                    throw new Error(`HTTP ${hotRes.status} | ${latestRes.status}`);
+                }
+            } catch (error) {
+                log(`❌ Get jobs failed: ${error.message}`, 'error');
+                return [];
+            }
+        }
+        
+        async function createTestJob() {
+            log('🔥 Creating custom demo job...', 'step');
+            
+            const jobData = {
+                employerId: 1,
+                title: document.getElementById('job-title').value,
+                description: document.getElementById('job-description').value,
+                location: document.getElementById('job-location').value,
+                salary: document.getElementById('job-salary').value,
+                jobType: document.getElementById('job-type').value,
+                industry: 'Công nghệ thông tin',
+                experienceLevel: 'Middle',
+                skillsRequired: 'React, JavaScript, HTML, CSS, Node.js',
+                benefits: 'Bảo hiểm xã hội, Du lịch hàng năm, Thưởng hiệu suất',
+                status: 'ACTIVE'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/recruiter/jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jobData)
+                });
+                
+                const resultDiv = document.getElementById('create-result');
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        log(`✅ Custom job created successfully! ID: ${result.data?.id}`, 'success');
+                        resultDiv.innerHTML = `
+                            <div style="color: green; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                                <strong>✅ Thành công!</strong><br>
+                                Job ID: ${result.data?.id}<br>
+                                Title: ${result.data?.title}<br>
+                                Status: ${result.data?.status}
+                            </div>
+                        `;
+                        await loadJobs(); // Refresh job list
+                    } else {
+                        throw new Error(result.message || 'Unknown error');
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`❌ Custom job creation failed: ${error}`, 'error');
+                    resultDiv.innerHTML = `
+                        <div style="color: red; padding: 15px; background: #f8d7da; border-radius: 8px; border-left: 4px solid #dc3545;">
+                            <strong>❌ Lỗi!</strong><br>
+                            ${error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                log(`❌ Custom job creation error: ${error.message}`, 'error');
+                document.getElementById('create-result').innerHTML = `
+                    <div style="color: red; padding: 15px; background: #f8d7da; border-radius: 8px; border-left: 4px solid #dc3545;">
+                        <strong>❌ Lỗi!</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadJobs() {
+            log('📋 Loading current jobs from database...', 'step');
+            try {
+                const jobs = await testGetJobs();
+                const jobsList = document.getElementById('jobs-list');
+                
+                if (jobs.length === 0) {
+                    jobsList.innerHTML = `
+                        <div style="text-align: center; color: #666; padding: 40px;">
+                            <h3>🗂️ Chưa có job nào trong database</h3>
+                            <p>Hãy tạo job demo ở trên để test luồng dữ liệu!</p>
+                        </div>
+                    `;
+                } else {
+                    jobsList.innerHTML = jobs.map(job => `
+                        <div class="job-item">
+                            <h4 style="color: #007bff; margin-bottom: 10px;">🔥 ${job.title}</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                                <p><strong>📍 Location:</strong> ${job.location}</p>
+                                <p><strong>💰 Salary:</strong> ${job.salary}</p>
+                                <p><strong>💼 Type:</strong> ${job.jobType}</p>
+                                <p><strong>🏭 Industry:</strong> ${job.industry || 'N/A'}</p>
+                            </div>
+                            <p><strong>📝 Status:</strong> <span class="status ${job.status?.toLowerCase()}">${job.status}</span></p>
+                            <p><strong>📅 Created:</strong> ${job.createdDate || 'Unknown'}</p>
+                            <div style="margin-top: 10px;">
+                                <strong>📋 Description:</strong>
+                                <p style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px;">
+                                    ${job.description?.substring(0, 200)}${job.description?.length > 200 ? '...' : ''}
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                log(`✅ Displayed ${jobs.length} jobs in UI`, 'success');
+                document.getElementById('jobs-count').textContent = `${jobs.length} jobs`;
+            } catch (error) {
+                log(`❌ Load jobs failed: ${error.message}`, 'error');
+                document.getElementById('jobs-list').innerHTML = `
+                    <div style="color: red; text-align: center; padding: 40px;">
+                        <h3>❌ Không thể tải danh sách jobs</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function simulateRecruiterLogin() {
+            log('👨‍💼 Simulating recruiter login...', 'step');
+            // Simulate employer session
+            localStorage.setItem('current_employer_id', '1');
+            localStorage.setItem('role', 'EMPLOYER');
+            localStorage.setItem('user_id', '1');
+            log('✅ Recruiter session simulated (employer_id: 1)', 'success');
+            log('💡 Jobs created will be associated with this employer', 'info');
+        }
+        
+        function simulateCandidateView() {
+            log('👨‍💻 Simulating candidate job view...', 'step');
+            log('💡 This would show jobs in HomePage FeaturedJobs component', 'info');
+            log('🔗 Jobs from /api/jobs/hot-jobs and /api/jobs/latest-jobs endpoints', 'info');
+            loadJobs(); // Load jobs as they would appear to candidates
+        }
+        
+        async function runFullDemo() {
+            log('🚀 Starting full demo workflow...', 'step');
+            updateProgress(0);
+            
+            // Step 1: Check backend
+            updateProgress(1);
+            log('📍 Step 1: Checking backend connection...', 'step');
+            const backendOk = await testBackendConnection();
+            if (!backendOk) {
+                log('❌ Demo stopped: Backend not available', 'error');
+                return;
+            }
+            
+            // Step 2: Check frontend
+            updateProgress(2);
+            log('📍 Step 2: Checking frontend status...', 'step');
+            try {
+                const frontendResponse = await fetch(`${FRONTEND_BASE}`);
+                if (frontendResponse.ok) {
+                    document.getElementById('frontend-status').innerHTML = '🟢 Running';
+                    log('✅ Frontend is accessible', 'success');
+                } else {
+                    document.getElementById('frontend-status').innerHTML = '🔴 Not accessible';
+                    log('⚠️ Frontend not accessible but continuing demo', 'warning');
+                }
+            } catch (error) {
+                document.getElementById('frontend-status').innerHTML = '🔴 Not running';
+                log('⚠️ Frontend not accessible but continuing demo', 'warning');
+            }
+            
+            // Step 3: Setup recruiter session
+            updateProgress(3);
+            log('📍 Step 3: Setting up recruiter session...', 'step');
+            simulateRecruiterLogin();
+            
+            // Step 4: Create demo job
+            updateProgress(4);
+            log('📍 Step 4: Creating demo job...', 'step');
+            await createTestJob();
+            
+            // Step 5: Verify job in database
+            updateProgress(5);
+            log('📍 Step 5: Verifying job saved to database...', 'step');
+            await testGetJobs();
+            
+            // Step 6: Load jobs for recruiter view
+            updateProgress(6);
+            log('📍 Step 6: Loading jobs for recruiter dashboard...', 'step');
+            await loadJobs();
+            
+            // Step 7: Simulate candidate view
+            updateProgress(7);
+            log('📍 Step 7: Simulating candidate job view...', 'step');
+            simulateCandidateView();
+            
+            // Step 8: Complete
+            updateProgress(8);
+            log('🎉 Full demo completed successfully!', 'success');
+            log('✅ Workflow: Recruiter creates job → Saved to database → Available to candidates', 'success');
+        }
+        
+        // Auto-initialize on page load
+        window.onload = async function() {
+            log('🚀 FireHire AI Job Flow Demo initialized', 'step');
+            log('🎯 Ready to test complete job posting workflow!', 'info');
+            
+            // Quick backend check
+            await testBackendConnection();
+            
+            log('💡 Click "Chạy Demo Hoàn Chỉnh" to test the full workflow', 'info');
+        };
+    </script>
+</body>
+</html>

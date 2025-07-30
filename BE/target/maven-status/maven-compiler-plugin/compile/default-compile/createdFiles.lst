@@ -3,11 +3,13 @@ com\example\firehire_ai\dto\response\SkillTagDTO.class
 com\example\firehire_ai\repository\CVSectionRepository.class
 com\example\firehire_ai\dto\request\RegisterRequest.class
 com\example\firehire_ai\dto\response\EmployerDTO$EmployerDTOBuilder.class
+com\example\firehire_ai\entity\UserRoleConverter.class
 com\example\firehire_ai\service\AuthService.class
 com\example\firehire_ai\model\CVSkillTag$CVSkillTagBuilder.class
 com\example\firehire_ai\entity\User$UserRole.class
 com\example\firehire_ai\dto\response\ApiResponse$ApiResponseBuilder.class
 com\example\firehire_ai\entity\CVTemplate$CVTemplateBuilder.class
+com\example\firehire_ai\controller\AdminController.class
 com\example\firehire_ai\config\WebConfig$1.class
 com\example\firehire_ai\controller\CVController.class
 com\example\firehire_ai\dto\response\CVViewLogDTO$CVViewLogDTOBuilder.class
@@ -40,9 +42,9 @@ com\example\firehire_ai\dto\JwtResponse.class
 com\example\firehire_ai\repository\EmployerRepository.class
 com\example\firehire_ai\model\CVSection.class
 com\example\firehire_ai\repository\CVRepository.class
-com\example\firehire_ai\controller\CVTemplateController.class
 com\example\firehire_ai\dto\CVUploadRequest.class
 com\example\firehire_ai\security\service\UserDetailsServiceImpl.class
+com\example\firehire_ai\dto\AdminStatsResponse.class
 com\example\firehire_ai\repository\ApplicationRepository.class
 com\example\firehire_ai\dto\response\ApiResponse.class
 com\example\firehire_ai\dto\response\CVSectionDTO.class
@@ -112,7 +114,6 @@ com\example\firehire_ai\dto\response\LoginResponse.class
 com\example\firehire_ai\FireHireAiApplication.class
 com\example\firehire_ai\dto\RegisterResponse.class
 com\example\firehire_ai\controller\CVAnalysisController.class
-com\example\firehire_ai\controller\ChatbotController.class
 com\example\firehire_ai\dto\request\CVSectionRequest.class
 com\example\firehire_ai\dto\request\CVViewLogRequest.class
 com\example\firehire_ai\entity\JobPosting.class
