@@ -1,30 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Clock, Building, MapPin, Calendar, DollarSign, Users } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Clock, Building, MapPin, Calendar, DollarSign, Users, RotateCcw } from 'lucide-react';
 import api from '../../services/api';
 
 const JobManagement = () => {
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [jobsPerPage] = useState(10);
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [showJobModal, setShowJobModal] = useState(false);
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0
-  });
-
-  // Mock data for development
-  const mockJobs = [
+  // Initialize with mock data so users see content immediately
+  const [jobs, setJobs] = useState([
     {
       id: 1,
       title: 'Senior Frontend Developer',
-      company: 'TechCorp Vietnam',
+      company: 'Tech Innovation Ltd',
       companyLogo: 'https://via.placeholder.com/50',
       location: 'Hà Nội',
       salary: '20-35 triệu',
@@ -68,7 +52,7 @@ const JobManagement = () => {
       salary: '12-18 triệu',
       jobType: 'FULL_TIME',
       experience: '1-3 năm',
-      category: 'Công nghệ thông tin',
+      category: 'Phân tích dữ liệu',
       status: 'REJECTED',
       description: 'Vị trí Data Analyst phân tích dữ liệu kinh doanh và tạo báo cáo cho ban lãnh đạo.',
       requirements: ['SQL, Python', 'Excel nâng cao', 'Power BI hoặc Tableau'],
@@ -78,109 +62,127 @@ const JobManagement = () => {
       applicantCount: 12,
       views: 76,
       rejectionReason: 'Thông tin công ty không đầy đủ'
-    },
-    {
-      id: 4,
-      title: 'UI/UX Designer',
-      company: 'Creative Studio',
-      companyLogo: 'https://via.placeholder.com/50',
-      location: 'Hà Nội',
-      salary: '10-20 triệu',
-      jobType: 'PART_TIME',
-      experience: '1-2 năm',
-      category: 'Thiết kế',
-      status: 'PENDING',
-      description: 'Thiết kế giao diện người dùng cho các ứng dụng web và mobile.',
-      requirements: ['Figma, Adobe XD', 'Hiểu về UX principles', 'Portfolio mạnh'],
-      benefits: ['Flexible working hours', 'Creative environment', 'Modern tools'],
-      deadline: '2024-02-25',
-      createdAt: '2024-01-20',
-      applicantCount: 8,
-      views: 45
-    },
-    {
-      id: 5,
-      title: 'Sales Executive',
-      company: 'Sales Solutions Inc',
-      companyLogo: 'https://via.placeholder.com/50',
-      location: 'TP.HCM',
-      salary: '8-15 triệu + hoa hồng',
-      jobType: 'FULL_TIME',
-      experience: 'Không yêu cầu',
-      category: 'Kinh doanh',
-      status: 'APPROVED',
-      description: 'Nhân viên kinh doanh phụ trách tìm kiếm và chăm sóc khách hàng.',
-      requirements: ['Kỹ năng giao tiếp tốt', 'Chăm chỉ, năng động', 'Tiếng Anh cơ bản'],
-      benefits: ['Hoa hồng không giới hạn', 'Đào tạo miễn phí', 'Cơ hội thăng tiến'],
-      deadline: '2024-03-01',
-      createdAt: '2024-01-18',
-      applicantCount: 32,
-      views: 198
     }
-  ];
+  ]);
+  const [loading, setLoading] = useState(false); // Start with false since we have mock data
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [jobsPerPage] = useState(10);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [stats, setStats] = useState({
+    total: 3,
+    pending: 1,
+    approved: 1,
+    rejected: 1
+  });
+
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  const loadJobs = async () => {
+    try {
+      setLoading(true);
+      
+      // Try API first, keep mock data if API fails
+      try {
+        const response = await api.get('/admin/jobs');
+        
+        // Ensure we always set an array
+        const jobData = response.data;
+        if (Array.isArray(jobData)) {
+          setJobs(jobData);
+          console.log('API jobs loaded successfully:', jobData.length, 'jobs');
+        } else if (jobData && Array.isArray(jobData.jobs)) {
+          setJobs(jobData.jobs);
+          console.log('API jobs loaded successfully:', jobData.jobs.length, 'jobs');
+        } else {
+          console.warn('API response is not an array:', jobData);
+          // Keep existing mock data
+        }
+      } catch (apiError) {
+        console.log('API failed, keeping mock data:', apiError.message);
+        // Keep existing mock data - don't overwrite
+      }
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+      // Keep existing mock data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await api.get('/admin/jobs/stats');
+      setStats(response.data);
+    } catch (error) {
+      console.log('Stats API failed, using default stats:', error.message);
+      // Calculate stats from current jobs data or use default
+      if (Array.isArray(jobs) && jobs.length > 0) {
+        const stats = jobs.reduce((acc, job) => {
+          acc.total++;
+          acc[job.status?.toLowerCase() || 'pending']++;
+          return acc;
+        }, { total: 0, pending: 0, approved: 0, rejected: 0 });
+        setStats(stats);
+      } else {
+        // Set mock stats
+        setStats({ total: 3, pending: 1, approved: 1, rejected: 1 });
+      }
+    }
+  };
 
   useEffect(() => {
     loadJobs();
     loadStats();
   }, []);
 
-  const loadJobs = async () => {
-    try {
-      setLoading(true);
-      // Replace with actual API call
-      // const response = await api.get('/admin/jobs');
-      // setJobs(response.data);
-      
-      // Using mock data for now
-      setTimeout(() => {
-        setJobs(mockJobs);
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Error loading jobs:', error);
-      setJobs(mockJobs);
-      setLoading(false);
-    }
-  };
-
-  const loadStats = () => {
-    const stats = mockJobs.reduce((acc, job) => {
-      acc.total++;
-      acc[job.status.toLowerCase()]++;
-      return acc;
-    }, { total: 0, pending: 0, approved: 0, rejected: 0 });
+  // Filter and search logic
+  const filteredJobs = Array.isArray(jobs) ? jobs.filter(job => {
+    const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         job.company?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || job.status === filterStatus;
+    const matchesCategory = filterCategory === 'all' || job.category === filterCategory;
     
-    setStats(stats);
-  };
+    return matchesSearch && matchesStatus && matchesCategory;
+  }) : [];
 
   const handleJobAction = async (jobId, action, reason = '') => {
     try {
       const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-      // await api.put(`/admin/jobs/${jobId}/status`, { status: newStatus, reason });
+      await api.put(`/admin/jobs/${jobId}/status`, { status: newStatus, reason });
       
-      setJobs(jobs.map(job => 
-        job.id === jobId 
-          ? { ...job, status: newStatus, ...(reason && { rejectionReason: reason }) }
-          : job
-      ));
-      
-      loadStats();
+      // Reload jobs and stats after successful update
+      await loadJobs();
+      await loadStats();
       setShowJobModal(false);
-      // Show success notification
+      console.log(`Job ${action}d successfully`);
     } catch (error) {
       console.error('Error updating job status:', error);
     }
   };
 
-  // Filter and search logic
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || job.status === filterStatus;
-    const matchesCategory = filterCategory === 'all' || job.category === filterCategory;
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  const handleDeleteJob = async (jobId) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa tin tuyển dụng này?')) {
+      try {
+        await api.delete(`/admin/jobs/${jobId}`);
+        await loadJobs();
+        await loadStats();
+        console.log('Job deleted successfully');
+      } catch (error) {
+        console.error('Error deleting job:', error);
+      }
+    }
+  };
+
+  const handleRefresh = async () => {
+    await loadJobs();
+    await loadStats();
+  };
 
   // Pagination logic
   const indexOfLastJob = currentPage * jobsPerPage;
@@ -286,8 +288,18 @@ const JobManagement = () => {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Quản lý công việc</h2>
-          <div className="text-sm text-gray-600">
-            Tổng: {filteredJobs.length} công việc
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleRefresh}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              disabled={loading}
+            >
+              <RotateCcw size={16} />
+              {loading ? 'Đang tải...' : 'Làm mới'}
+            </button>
+            <div className="text-sm text-gray-600">
+              Tổng: {filteredJobs.length} công việc
+            </div>
           </div>
         </div>
 
@@ -399,16 +411,25 @@ const JobManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        setSelectedJob(job);
-                        setShowJobModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-900 flex items-center"
-                    >
-                      <Eye size={16} className="mr-1" />
-                      Chi tiết
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedJob(job);
+                          setShowJobModal(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-900 flex items-center"
+                      >
+                        <Eye size={16} className="mr-1" />
+                        Chi tiết
+                      </button>
+                      <button
+                        onClick={() => handleDeleteJob(job.id)}
+                        className="text-red-600 hover:text-red-900 flex items-center ml-2"
+                      >
+                        <XCircle size={16} className="mr-1" />
+                        Xóa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

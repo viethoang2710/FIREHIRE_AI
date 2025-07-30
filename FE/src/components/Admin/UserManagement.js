@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Edit, Trash2, UserCheck, UserX, Mail, Eye } from 'lucide-react';
+import { Search, MoreVertical, Trash2, UserCheck, UserX, Mail, Eye } from 'lucide-react';
 import api from '../../services/api';
 
 const UserManagement = () => {
+  // Start with empty array - will load from API or fallback to mock
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start loading to fetch from API first
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -13,65 +14,8 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [actionDropdown, setActionDropdown] = useState(null);
-
-  // Mock data for development
-  const mockUsers = [
-    {
-      id: 1,
-      fullName: 'Nguyễn Văn An',
-      email: 'an.nguyen@email.com',
-      phone: '0123456789',
-      role: 'JOB_SEEKER',
-      status: 'ACTIVE',
-      createdAt: '2024-01-15',
-      lastLogin: '2024-01-20',
-      profileCompleteness: 85
-    },
-    {
-      id: 2,
-      fullName: 'Trần Thị Bình',
-      email: 'binh.tran@company.com',
-      phone: '0987654321',
-      role: 'EMPLOYER',
-      status: 'ACTIVE',
-      createdAt: '2024-01-10',
-      lastLogin: '2024-01-19',
-      profileCompleteness: 92
-    },
-    {
-      id: 3,
-      fullName: 'Lê Văn Cường',
-      email: 'cuong.le@email.com',
-      phone: '0555666777',
-      role: 'JOB_SEEKER',
-      status: 'INACTIVE',
-      createdAt: '2024-01-05',
-      lastLogin: '2024-01-10',
-      profileCompleteness: 45
-    },
-    {
-      id: 4,
-      fullName: 'Phạm Thị Dung',
-      email: 'dung.pham@hr.com',
-      phone: '0333444555',
-      role: 'EMPLOYER',
-      status: 'PENDING',
-      createdAt: '2024-01-18',
-      lastLogin: null,
-      profileCompleteness: 70
-    },
-    {
-      id: 5,
-      fullName: 'Hoàng Văn Em',
-      email: 'em.hoang@tech.com',
-      phone: '0111222333',
-      role: 'JOB_SEEKER',
-      status: 'ACTIVE',
-      createdAt: '2024-01-12',
-      lastLogin: '2024-01-21',
-      profileCompleteness: 95
-    }
-  ];
+  const [error, setError] = useState(null);
+  const [dataSource, setDataSource] = useState('loading'); // 'api', 'mock', or 'loading'
 
   useEffect(() => {
     loadUsers();
@@ -80,42 +24,94 @@ const UserManagement = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Replace with actual API call
-      // const response = await api.get('/admin/users');
-      // setUsers(response.data);
+      setError(null);
       
-      // Using mock data for now
-      setTimeout(() => {
+      // Try API first for real database data
+      try {
+        console.log('Attempting to load users from API...');
+        const response = await api.get('/admin/users');
+        
+        // Ensure we always set an array
+        const userData = response.data;
+        if (Array.isArray(userData)) {
+          setUsers(userData);
+          setDataSource('api');
+          console.log('✅ Database data loaded successfully:', userData.length, 'users from API');
+        } else if (userData && Array.isArray(userData.users)) {
+          setUsers(userData.users);
+          setDataSource('api');
+          console.log('✅ Database data loaded successfully:', userData.users.length, 'users from API');
+        } else {
+          console.warn('API response is not an array:', userData);
+          throw new Error('Invalid API response format');
+        }
+      } catch (apiError) {
+        console.warn('❌ API failed, falling back to mock data:', apiError.message);
+        setError('Không thể kết nối với cơ sở dữ liệu. Hiển thị dữ liệu mẫu.');
+        
+        // Fallback to mock data only when API fails
+        const mockUsers = [
+          {
+            id: 1,
+            fullName: 'Nguyễn Văn A (Dữ liệu mẫu)',
+            email: 'nguyenvana@gmail.com',
+            phone: '0123456789',
+            role: 'JOB_SEEKER',
+            status: 'ACTIVE',
+            createdAt: '2024-01-15T10:30:00Z',
+            lastLogin: '2024-01-20T14:20:00Z',
+            profileCompleteness: 85
+          },
+          {
+            id: 2,
+            fullName: 'Trần Thị B (Dữ liệu mẫu)',
+            email: 'tranthib@gmail.com',
+            phone: '0987654321',
+            role: 'EMPLOYER',
+            status: 'ACTIVE',
+            createdAt: '2024-01-10T09:15:00Z',
+            lastLogin: '2024-01-19T16:45:00Z',
+            profileCompleteness: 92
+          },
+          {
+            id: 3,
+            fullName: 'Lê Văn C (Dữ liệu mẫu)',
+            email: 'levanc@gmail.com',
+            phone: '0369852147',
+            role: 'JOB_SEEKER',
+            status: 'PENDING',
+            createdAt: '2024-01-12T11:00:00Z',
+            lastLogin: null,
+            profileCompleteness: 45
+          }
+        ];
         setUsers(mockUsers);
-        setLoading(false);
-      }, 1000);
+        setDataSource('mock');
+      }
     } catch (error) {
       console.error('Error loading users:', error);
-      setUsers(mockUsers);
+      setError('Có lỗi xảy ra khi tải dữ liệu người dùng.');
+      setUsers([]);
+      setDataSource('error');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (userId, newStatus) => {
+    const handleStatusChange = async (userId, newStatus) => {
     try {
-      // await api.put(`/admin/users/${userId}/status`, { status: newStatus });
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, status: newStatus } : user
-      ));
-      setActionDropdown(null);
-      // Show success notification
+      await api.put(`/admin/users/${userId}/status`, { status: newStatus });
+      await loadUsers(); // Reload data
     } catch (error) {
       console.error('Error updating user status:', error);
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+    const handleDeleteUser = async (userId) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
       try {
-        // await api.delete(`/admin/users/${userId}`);
-        setUsers(users.filter(user => user.id !== userId));
-        setActionDropdown(null);
-        // Show success notification
+        await api.delete(`/admin/users/${userId}`);
+        await loadUsers(); // Reload data
       } catch (error) {
         console.error('Error deleting user:', error);
       }
@@ -127,15 +123,20 @@ const UserManagement = () => {
     setActionDropdown(null);
   };
 
+  // Refresh data from database
+  const handleRefresh = () => {
+    loadUsers();
+  };
+
   // Filter and search logic
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredUsers = Array.isArray(users) ? users.filter(user => {
+    const matchesSearch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
     
     return matchesSearch && matchesRole && matchesStatus;
-  });
+  }) : [];
 
   // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
@@ -184,10 +185,42 @@ const UserManagement = () => {
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Quản lý người dùng</h2>
-        <div className="text-sm text-gray-600">
-          Tổng: {filteredUsers.length} người dùng
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              '🔄'
+            )}
+            Làm mới
+          </button>
+          <div className="text-sm text-gray-600">
+            Tổng: {filteredUsers.length} người dùng
+            {dataSource === 'api' && <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Từ Database</span>}
+            {dataSource === 'mock' && <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">Dữ liệu mẫu</span>}
+          </div>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center">
+            <div className="text-red-600 mr-2">⚠️</div>
+            <div className="text-red-800">{error}</div>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-auto text-red-600 hover:text-red-800"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filter Bar */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">

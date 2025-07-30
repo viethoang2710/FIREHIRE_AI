@@ -120,4 +120,29 @@ public class UserService {
             return ApiResponse.<List<UserDTO>>error("Invalid role: " + role);
         }
     }
+
+    // Admin methods
+    public List<User> getAllUsersForAdmin() {
+        return userRepository.findAll();
+    }
+
+    public void updateUserStatus(Integer id, String status) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // TODO: Add status field to User entity if needed
+            // user.setStatus(User.UserStatus.valueOf(status));
+            userRepository.save(user);
+        } else {
+            throw new RuntimeException("User not found");
+        }
+    }
+
+    public void deleteUser(Integer id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+        } else {
+            throw new RuntimeException("User not found");
+        }
+    }
 }

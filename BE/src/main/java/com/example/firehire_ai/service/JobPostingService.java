@@ -263,4 +263,32 @@ public class JobPostingService {
 
         return ApiResponse.success("Job posting deleted successfully");
     }
+
+    // Admin methods
+    public List<JobPosting> getAllJobs() {
+        return jobPostingRepository.findAll();
+    }
+
+    public void updateJobStatus(Integer id, String status, String reason) {
+        Optional<JobPosting> jobOpt = jobPostingRepository.findById(id);
+        if (jobOpt.isPresent()) {
+            JobPosting job = jobOpt.get();
+            // TODO: Add status field to JobPosting entity if needed
+            // job.setStatus(status);
+            // if (reason != null && !reason.isEmpty()) {
+            // job.setRejectionReason(reason);
+            // }
+            jobPostingRepository.save(job);
+        } else {
+            throw new RuntimeException("Job not found");
+        }
+    }
+
+    public void deleteJob(Integer id) {
+        if (jobPostingRepository.existsById(id)) {
+            jobPostingRepository.deleteById(id);
+        } else {
+            throw new RuntimeException("Job not found");
+        }
+    }
 }

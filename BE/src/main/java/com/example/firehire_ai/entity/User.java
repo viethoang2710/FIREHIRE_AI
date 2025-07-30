@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -35,7 +36,7 @@ public class User {
     @Column(name = "PhoneNumber", length = 20)
     private String phoneNumber;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = UserRoleConverter.class)
     @Column(name = "Role", nullable = false)
     @Builder.Default
     private UserRole role = UserRole.CANDIDATE;
@@ -46,9 +47,11 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private Set<CV> cvs = new HashSet<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private Employer employer;
 
     // Enum for user roles
