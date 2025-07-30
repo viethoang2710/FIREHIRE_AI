@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Briefcase, Award, Star, Edit, PlusCircle, Trash2, Download, Settings } from 'lucide-react';
+import { User, Briefcase, Award, Star, Edit, PlusCircle, Trash2, Download, Settings, CheckCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -14,6 +14,10 @@ import CVPreview from '../components/CVBuilder/CVPreview';
 const CVBuilderPage = () => {
   // State quản lý mục nào đang được mở
   const [activeAccordion, setActiveAccordion] = useState('personalInfo');
+  
+  // State quản lý trạng thái tải xuống
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
   
   // State chứa toàn bộ dữ liệu của CV
   const [cvData, setCvData] = useState({
@@ -74,23 +78,196 @@ const CVBuilderPage = () => {
   };
 
   const handleDownloadPDF = async () => {
+    try {
+      setIsDownloading(true);
+      setDownloadSuccess(false);
+      
+      const preview = document.querySelector('.cv-preview-area');
+      if (!preview) {
+        alert('Không tìm thấy vùng xem trước CV');
+        return;
+      }
+
+      // Phương pháp 1: Sử dụng window.print() để in thành PDF
+      const printWindow = window.open('', '_blank');
+      const cvContent = preview.innerHTML;
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>CV - ${cvData.personalInfo.fullName || 'CV'}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              background: white;
+            }
+            @media print {
+              body { margin: 0; }
+              @page { margin: 10mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${cvContent}
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Đợi một chút để nội dung load xong
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+      
+      // Hiển thị thông báo thành công
+      setDownloadSuccess(true);
+      setTimeout(() => {
+        setDownloadSuccess(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Lỗi khi tải xuống PDF:', error);
+      alert('Có lỗi xảy ra khi tải xuống PDF. Vui lòng thử lại.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Hàm tạo CV mới (reset tất cả dữ liệu)
+  const handleNewCV = () => {
+    if (window.confirm('Bạn có chắc chắn muốn tạo CV mới? Tất cả dữ liệu hiện tại sẽ bị xóa.')) {
+      setCvData({
+        personalInfo: {
+          fullName: '', jobTitle: '', email: '', phone: '', address: '', website: ''
+        },
+        objective: '',
+        experience: [
+          { id: 1, company: '', position: '', duration: '', description: '' }
+        ],
+        education: [
+          { id: 1, school: '', degree: '', duration: '' }
+        ],
+        skills: '',
+        awards: []
+      });
+      setActiveAccordion('personalInfo');
+      setDownloadSuccess(false);
+    }
+  };
+
+  // Hàm tải xuống bằng cách in
+  const handlePrintPDF = () => {
     const preview = document.querySelector('.cv-preview-area');
-    if (!preview) return;
-    const canvas = await html2canvas(preview);
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const width = pdf.internal.pageSize.getWidth();
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-    pdf.save('cv.pdf');
+    if (!preview) {
+      alert('Không tìm thấy vùng xem trước CV');
+      return;
+    }
+
+    // Tạo một window mới để in
+    const printContent = preview.innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    // Thay thế nội dung trang bằng CV
+    document.body.innerHTML = `
+      <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        @media print {
+          body { margin: 0; padding: 10mm; }
+          @page { margin: 0; size: A4; }
+        }
+      </style>
+      ${printContent}
+    `;
+    
+    // In trang
+    window.print();
+    
+    // Khôi phục nội dung gốc
+    document.body.innerHTML = originalContent;
+    
+    // Reload lại page để khôi phục các event listeners
+    window.location.reload();
+  };
+
+  // Hàm debug để kiểm tra element
+  const handleDebugPDF = () => {
+    const preview = document.querySelector('.cv-preview-area');
+    console.log('Preview element:', preview);
+    console.log('Preview dimensions:', {
+      width: preview?.offsetWidth,
+      height: preview?.offsetHeight,
+      scrollWidth: preview?.scrollWidth,
+      scrollHeight: preview?.scrollHeight
+    });
+    console.log('CV Data:', cvData);
+    alert(`Element found: ${preview ? 'Yes' : 'No'}\nDimensions: ${preview?.offsetWidth}x${preview?.offsetHeight}`);
+  };
+
+  // Hàm lưu dữ liệu vào localStorage
+  const handleSaveData = () => {
+    try {
+      localStorage.setItem('cvData', JSON.stringify(cvData));
+      alert('Dữ liệu đã được lưu thành công!');
+    } catch (error) {
+      console.error('Lỗi khi lưu dữ liệu:', error);
+      alert('Có lỗi xảy ra khi lưu dữ liệu.');
+    }
+  };
+
+  // Hàm tải dữ liệu từ localStorage
+  const handleLoadData = () => {
+    try {
+      const savedData = localStorage.getItem('cvData');
+      if (savedData) {
+        setCvData(JSON.parse(savedData));
+        alert('Dữ liệu đã được tải thành công!');
+      } else {
+        alert('Không tìm thấy dữ liệu đã lưu.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu:', error);
+      alert('Có lỗi xảy ra khi tải dữ liệu.');
+    }
   };
 
   return (
     <div className="min-h-[calc(100vh-68px)] flex flex-col lg:flex-row bg-gray-200 font-sans">
       {/* --- Left Panel: Form --- */}
       <aside className="w-full lg:w-[450px] bg-white p-6 overflow-y-auto shadow-xl z-10">
-        <h1 className="text-2xl font-bold mb-2">Trình tạo CV Online</h1>
-        <p className="text-sm text-gray-500 mb-6">Điền thông tin vào các mục bên dưới.</p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Trình tạo CV Online</h1>
+            <p className="text-sm text-gray-500">Điền thông tin vào các mục bên dưới.</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSaveData}
+              className="px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              title="Lưu dữ liệu"
+            >
+              Lưu
+            </button>
+            <button
+              onClick={handleLoadData}
+              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              title="Tải dữ liệu đã lưu"
+            >
+              Tải
+            </button>
+            <button
+              onClick={handleNewCV}
+              className="px-3 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              title="Tạo CV mới"
+            >
+              Mới
+            </button>
+          </div>
+        </div>
         
         <div className="space-y-3">
           {/* Section: Thông tin cá nhân */}
@@ -159,6 +336,21 @@ const CVBuilderPage = () => {
                 border-color: #3b82f6;
                 box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
             }
+            
+            @keyframes fade-in-down {
+                0% {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                100% {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .animate-fade-in-down {
+                animation: fade-in-down 0.5s ease-out forwards;
+            }
         `}</style>
       </aside>
 
@@ -167,13 +359,68 @@ const CVBuilderPage = () => {
         <div className="w-full max-w-[210mm] mb-4 p-2 bg-white rounded-lg shadow-md flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-600">Bản xem trước</span>
             <div className="flex items-center gap-2">
-                <button className="p-2 rounded-md hover:bg-gray-100 text-gray-600" title="Cài đặt mẫu"><Settings size={18} /></button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center transition-colors text-sm" title="Tải CV xuống" onClick={handleDownloadPDF}><Download size={16} className="mr-2"/> Tải xuống</button>
+                <button 
+                  onClick={handleDebugPDF}
+                  className="p-2 rounded-md hover:bg-gray-100 text-gray-600" 
+                  title="Debug PDF"
+                >
+                  🔍
+                </button>
+                <button className="p-2 rounded-md hover:bg-gray-100 text-gray-600" title="Cài đặt mẫu">
+                  <Settings size={18} />
+                </button>
+                
+                {/* Nút tải xuống với trạng thái */}
+                <button 
+                  onClick={handlePrintPDF}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center transition-colors text-sm"
+                  title="In CV (Ctrl+P)"
+                >
+                  🖨️ In
+                </button>
+                
+                <button 
+                  className={`font-semibold py-2 px-4 rounded-lg flex items-center justify-center transition-colors text-sm min-w-[120px] ${
+                    isDownloading 
+                      ? 'bg-gray-400 cursor-not-allowed text-white' 
+                      : downloadSuccess 
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`} 
+                  title="Tải CV xuống" 
+                  onClick={handleDownloadPDF}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Đang tải...
+                    </>
+                  ) : downloadSuccess ? (
+                    <>
+                      <CheckCircle size={16} className="mr-2"/> 
+                      Hoàn thành
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} className="mr-2"/> 
+                      Tải xuống
+                    </>
+                  )}
+                </button>
             </div>
         </div>
         <div className="w-full max-w-[210mm] max-h-[90vh] lg:max-h-[85vh] overflow-hidden rounded-lg shadow-2xl cv-preview-area">
            <CVPreview data={cvData} />
         </div>
+        
+        {/* Thông báo toast khi tải xuống thành công */}
+        {downloadSuccess && (
+          <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center animate-fade-in-down z-50">
+            <CheckCircle size={20} className="mr-2"/>
+            <span>CV đã được tải xuống thành công!</span>
+          </div>
+        )}
       </main>
     </div>
   );

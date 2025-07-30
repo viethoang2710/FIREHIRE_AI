@@ -1,0 +1,72 @@
+/* OKLCH Color Function Polyfill */
+/* This file provides fallbacks for unsupported oklch() color functions */
+
+:root {
+  /* Define CSS custom properties as fallbacks for common colors */
+  --color-primary: #3b82f6;
+  --color-secondary: #6b7280;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  
+  /* Tailwind default colors as RGB fallbacks */
+  --tw-color-slate-50: rgb(248, 250, 252);
+  --tw-color-slate-100: rgb(241, 245, 249);
+  --tw-color-slate-200: rgb(226, 232, 240);
+  --tw-color-slate-300: rgb(203, 213, 225);
+  --tw-color-slate-400: rgb(148, 163, 184);
+  --tw-color-slate-500: rgb(100, 116, 139);
+  --tw-color-slate-600: rgb(71, 85, 105);
+  --tw-color-slate-700: rgb(51, 65, 85);
+  --tw-color-slate-800: rgb(30, 41, 59);
+  --tw-color-slate-900: rgb(15, 23, 42);
+}
+
+/* Override any potential oklch usage with RGB equivalents */
+* {
+  /* Ensure all elements use supported color formats */
+  color: revert-layer;
+  background-color: revert-layer;
+  border-color: revert-layer;
+}
+
+/* Specific fixes for common Tailwind classes that might use oklch */
+.text-slate-500 {
+  color: rgb(100, 116, 139) !important;
+}
+
+.bg-white {
+  background-color: rgb(255, 255, 255) !important;
+}
+
+.bg-slate-50 {
+  background-color: rgb(248, 250, 252) !important;
+}
+
+.border-slate-200 {
+  border-color: rgb(226, 232, 240) !important;
+}
+
+/* Add more specific overrides as needed */
+.text-blue-600 {
+  color: rgb(37, 99, 235) !important;
+}
+
+.bg-blue-50 {
+  background-color: rgb(239, 246, 255) !important;
+}
+
+/* Feature detection and progressive enhancement */
+@supports not (color: oklch(50% 0.5 180)) {
+  /* Fallback styles for browsers that don't support oklch */
+  html {
+    color-scheme: light;
+  }
+  
+  body {
+    color: rgb(0, 0, 0);
+    background-color: rgb(255, 255, 255);
+  }
+}

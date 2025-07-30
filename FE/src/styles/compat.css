@@ -1,0 +1,43 @@
+/* CSS compatibility fixes for modern color functions */
+
+/* Force disable modern color functions completely */
+* {
+  /* Override any problematic color functions */
+  color-scheme: light !important;
+}
+
+/* Reset any oklch/lab/lch colors to safe RGB equivalents */
+:root {
+  /* Safe color variables */
+  --color-primary: #3b82f6;
+  --color-secondary: #6b7280;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+}
+
+/* Ensure no modern color functions are used */
+body {
+  background-color: white;
+  color: black;
+}
+
+/* Override Tailwind's default colors if they use modern functions */
+.text-blue-600 { color: #2563eb !important; }
+.text-blue-500 { color: #3b82f6 !important; }
+.bg-blue-600 { background-color: #2563eb !important; }
+.bg-blue-500 { background-color: #3b82f6 !important; }
+.border-blue-600 { border-color: #2563eb !important; }
+.border-blue-500 { border-color: #3b82f6 !important; }

@@ -10,10 +10,19 @@ module.exports = {
         inter: ['Inter', 'sans-serif'], // Thêm font Inter nếu bạn muốn sử dụng nó một cách tường minh
       },
       colors: {
-        // Bạn có thể mở rộng bảng màu ở đây
-        // Ví dụ:
-        // 'brand-blue': '#007bff',
-        // 'brand-green': '#28a745',
+        // Override with safe RGB colors only
+        'blue': {
+          50: '#eff6ff',
+          100: '#dbeafe', 
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
       },
       animation: { // Thêm các keyframes đã định nghĩa trong animations.css
         'fade-in-down': 'fade-in-down 0.5s ease-out forwards',
@@ -30,6 +39,10 @@ module.exports = {
         },
       }
     },
+  },
+  corePlugins: {
+    // Disable modern color functions to avoid oklch() errors
+    colorScheme: false,
   },
   plugins: [
     // require('@tailwindcss/forms'), // Ví dụ nếu bạn muốn sử dụng plugin forms của Tailwind

@@ -1,3 +1,9 @@
+/* Import OKLCH polyfill first */
+@import './styles/oklch-polyfill.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import compatibility fixes */
+@import './styles/compat.css';

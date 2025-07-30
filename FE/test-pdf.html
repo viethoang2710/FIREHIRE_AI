@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test PDF Download</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .cv-preview-area {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px auto;
+        }
+        .download-btn {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background: #2563eb;
+        }
+        .download-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test PDF Download</h1>
+    <button id="downloadBtn" class="download-btn">Tải xuống PDF</button>
+    
+    <div class="cv-preview-area" id="cvPreview">
+        <h2>NGUYEN NHUPHUC</h2>
+        <p>lập trình full stack</p>
+        <p>admin@gmail.com | 1234567890 | https://www.w3schools.com/c/index.php</p>
+        
+        <h3>Mục tiêu nghề nghiệp</h3>
+        <p>Mục tiêu của tôi là áp dụng kiến thức và kinh nghiệm lập trình để tạo ra các sản phẩm có giá trị, đồng thời phát triển bản thân trong một môi trường chuyên nghiệp.</p>
+        
+        <h3>Kinh nghiệm làm việc</h3>
+        <h4>Frontend Developer</h4>
+        <p>tại Công ty ABC (01/2023 - Hiện tại)</p>
+        <ul>
+            <li>Phát triển giao diện người dùng.</li>
+            <li>Tối ưu hóa hiệu suất trang web.</li>
+        </ul>
+        
+        <h3>Học vấn</h3>
+        <h4>Đại học Bách Khoa</h4>
+        <p>Kỹ sư Công nghệ thông tin (2019-2023)</p>
+        
+        <h3>Kỹ năng</h3>
+        <p>ReactJS, JavaScript, HTML, CSS, Figma</p>
+    </div>
+
+    <script>
+        document.getElementById('downloadBtn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Đang tải...';
+            
+            try {
+                const preview = document.getElementById('cvPreview');
+                
+                // Tạo canvas từ HTML element
+                const canvas = await html2canvas(preview, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                // Tạo PDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgData = canvas.toDataURL('image/png', 0.95);
+                const pdfWidth = 210;
+                const pdfHeight = 297;
+                
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = Math.min(pdfWidth / (imgWidth * 0.264583), pdfHeight / (imgHeight * 0.264583));
+                
+                const finalWidth = imgWidth * 0.264583 * ratio;
+                const finalHeight = imgHeight * 0.264583 * ratio;
+                
+                const x = (pdfWidth - finalWidth) / 2;
+                const y = (pdfHeight - finalHeight) / 2;
+
+                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                pdf.save('CV_Test.pdf');
+                
+                btn.textContent = 'Tải xuống thành công!';
+                btn.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Tải xuống PDF';
+                    btn.style.background = '#3b82f6';
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Lỗi:', error);
+                alert('Có lỗi xảy ra: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Tải xuống PDF';
+            }
+        });
+    </script>
+</body>
+</html>
