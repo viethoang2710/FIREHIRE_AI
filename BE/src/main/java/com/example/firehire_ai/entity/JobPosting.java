@@ -28,6 +28,9 @@ public class JobPosting {
     @Column(name = "Title", length = 255, nullable = false)
     private String title;
 
+    @Column(name = "CompanyName", length = 255) // Cột mới được thêm vào database
+    private String companyName;
+
     @Column(name = "Description", columnDefinition = "TEXT")
     private String description;
 

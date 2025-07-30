@@ -21,23 +21,67 @@ const JobCard = ({ job }) => {
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4 border border-gray-200 hover:shadow-md transition-shadow">
       <h2 className="text-xl font-semibold text-blue-700 mb-1">{job?.title || 'Tiêu đề công việc'}</h2>
-      <p className="text-gray-600 mb-1">{job?.company || 'Tên công ty'}</p>
+      <p className="text-gray-600 mb-1">{job?.companyName || job?.company || 'Tên công ty'}</p>
       <p className="text-gray-500 text-sm mb-2">{job?.location || 'Địa điểm'}</p>
       <p className="text-green-600 font-bold mb-3">{job?.salary || 'Mức lương'}</p>
+      
+      {/* Experience Level và Job Type */}
+      <div className="flex gap-4 mb-3">
+        {job?.experienceLevel && (
+          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+            {job.experienceLevel}
+          </span>
+        )}
+        {job?.jobType && (
+          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+            {job.jobType}
+          </span>
+        )}
+        {job?.industry && (
+          <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+            {job.industry}
+          </span>
+        )}
+      </div>
 
       {/* Mô tả công việc */}
-      <p className="text-gray-800 text-sm whitespace-pre-line">
-        {showFullDesc
-          ? job?.description || 'Không có mô tả'
-          : (job?.description?.slice(0, 150) || 'Không có mô tả') + (job?.description?.length > 150 ? '...' : '')}
-      </p>
-      {job?.description?.length > 150 && (
-        <button
-          onClick={() => setShowFullDesc(!showFullDesc)}
-          className="text-blue-500 text-sm mt-1 hover:underline"
-        >
-          {showFullDesc ? 'Ẩn bớt' : 'Xem thêm'}
-        </button>
+      <div className="mb-3">
+        <h4 className="font-semibold text-gray-800 mb-1">Mô tả công việc:</h4>
+        <p className="text-gray-800 text-sm whitespace-pre-line">
+          {showFullDesc
+            ? job?.description || 'Không có mô tả'
+            : (job?.description?.slice(0, 150) || 'Không có mô tả') + (job?.description?.length > 150 ? '...' : '')}
+        </p>
+        {job?.description?.length > 150 && (
+          <button
+            onClick={() => setShowFullDesc(!showFullDesc)}
+            className="text-blue-500 text-sm mt-1 hover:underline"
+          >
+            {showFullDesc ? 'Ẩn bớt' : 'Xem thêm'}
+          </button>
+        )}
+      </div>
+
+      {/* Yêu cầu ứng viên */}
+      {job?.skillsRequired && (
+        <div className="mb-3">
+          <h4 className="font-semibold text-gray-800 mb-1">Yêu cầu ứng viên:</h4>
+          <p className="text-gray-700 text-sm whitespace-pre-line">
+            {job.skillsRequired.slice(0, 200)}
+            {job.skillsRequired.length > 200 && '...'}
+          </p>
+        </div>
+      )}
+
+      {/* Quyền lợi */}
+      {job?.benefits && (
+        <div className="mb-3">
+          <h4 className="font-semibold text-gray-800 mb-1">Quyền lợi:</h4>
+          <p className="text-gray-700 text-sm whitespace-pre-line">
+            {job.benefits.slice(0, 200)}
+            {job.benefits.length > 200 && '...'}
+          </p>
+        </div>
       )}
 
       {/* Tags */}

@@ -7,7 +7,7 @@ export const jobService = {
       
       // Mặc định chỉ lấy các tin có trạng thái "Đang hiển thị"
       const defaultParams = { status: 'Đang hiển thị', ...params };
-      const response = await api.get('/jobs', { params: defaultParams });
+      const response = await api.get('/api/jobs', { params: defaultParams });
       
       console.log('All jobs API response:', response.data);
       
@@ -45,7 +45,7 @@ export const jobService = {
 
   getJobById: async (id) => {
     try {
-      const response = await api.get(`/jobs/${id}`);
+      const response = await api.get(`/api/jobs/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch job details' };
@@ -54,18 +54,42 @@ export const jobService = {
 
   getJobsByLocation: async (locationSlug, params = {}) => {
     try {
-      const response = await api.get(`/jobs/location/${locationSlug}`, { params });
-      return response.data;
+      console.log('Fetching jobs by location:', locationSlug);
+      const response = await api.get(`/api/jobs/location`, { 
+        params: { location: locationSlug, ...params } 
+      });
+      
+      console.log('Location jobs response:', response.data);
+      
+      // Xử lý dữ liệu trả về từ API với cấu trúc ApiResponse<List<JobPostingDTO>>
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      
+      return [];
     } catch (error) {
+      console.error('Error fetching jobs by location:', error);
       throw error.response?.data || { message: 'Failed to fetch jobs by location' };
     }
   },
 
   getJobsByIndustry: async (industrySlug, params = {}) => {
     try {
-      const response = await api.get(`/jobs/industry/${industrySlug}`, { params });
-      return response.data;
+      console.log('Fetching jobs by industry:', industrySlug);
+      const response = await api.get(`/api/jobs/industry`, { 
+        params: { industry: industrySlug, ...params } 
+      });
+      
+      console.log('Industry jobs response:', response.data);
+      
+      // Xử lý dữ liệu trả về từ API với cấu trúc ApiResponse<List<JobPostingDTO>>
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      
+      return [];
     } catch (error) {
+      console.error('Error fetching jobs by industry:', error);
       throw error.response?.data || { message: 'Failed to fetch jobs by industry' };
     }
   },
@@ -76,8 +100,8 @@ export const jobService = {
       
       // Lấy hot jobs và latest jobs từ backend, gộp lại, loại trùng
       const [hotRes, latestRes] = await Promise.all([
-        api.get('/jobs/hot-jobs', { params: { limit: 6 } }),
-        api.get('/jobs/latest-jobs', { params: { limit: 6 } })
+        api.get('/api/jobs/hot-jobs', { params: { limit: 6 } }),
+        api.get('/api/jobs/latest-jobs', { params: { limit: 6 } })
       ]);
       
       console.log('Hot jobs response:', hotRes.data);
@@ -119,7 +143,7 @@ export const jobService = {
 
   applyForJob: async (jobId, applicationData) => {
     try {
-      const response = await api.post(`/jobs/${jobId}/apply`, applicationData);
+      const response = await api.post(`/api/jobs/${jobId}/apply`, applicationData);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to submit application' };

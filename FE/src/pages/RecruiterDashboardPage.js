@@ -24,7 +24,7 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
     type: 'Full-time',
     industry: 'Công nghệ thông tin',
     experienceLevel: 'Junior',
-    companyName: 'Tech Solutions Inc.'
+    companyName: ''
   });
   
   // Nếu đang chỉnh sửa, điền dữ liệu vào form
@@ -40,7 +40,7 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
         type: jobData.type || jobData.jobType || 'Full-time', // Handle both fields
         industry: jobData.industry || 'Công nghệ thông tin',
         experienceLevel: jobData.experienceLevel || 'Junior',
-        companyName: jobData.companyName || 'Tech Solutions Inc.'
+        companyName: jobData.companyName || ''
       });
     }
   }, [isEdit, jobData]);
@@ -250,7 +250,7 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
               type="text" 
               id="companyName" 
               className="mt-1 input-field w-full p-2 border rounded" 
-              placeholder="VD: Tech Solutions Inc."
+              placeholder="Nhập tên công ty của bạn"
               value={formData.companyName}
               onChange={handleChange}
               required

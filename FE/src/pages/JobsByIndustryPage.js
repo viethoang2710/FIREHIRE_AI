@@ -1,19 +1,14 @@
 // src/pages/JobsByIndustryPage.js
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import JobCard from '../components/JobCard';
 import FilterSidebar from '../components/FilterSidebar';
 import Pagination from '../components/Pagination';
+import jobService from '../services/jobService';
 
-const mockJobs = [
-  { id: 1, title: 'Lập trình viên Java Senior', companyName: 'FPT Software', companyLogo: 'https://via.placeholder.com/50/FF0000/FFFFFF?text=FPT', salary: '20-35 triệu', location: 'Hà Nội', experience: '5 năm', deadline: '30/06/2025', tags: ['Java', 'Spring Boot', 'Backend', 'Hot'] },
-  { id: 2, title: 'Chuyên viên Digital Marketing', companyName: 'VNG Corp', companyLogo: 'https://via.placeholder.com/50/0000FF/FFFFFF?text=VNG', salary: '10-18 triệu', location: 'TP.HCM', experience: '2 năm', deadline: '28/06/2025', tags: ['Marketing', 'SEO', 'Content'] },
-  { id: 3, title: 'Kế toán tổng hợp', companyName: 'Viettel', companyLogo: 'https://via.placeholder.com/50/008000/FFFFFF?text=VT', salary: '8-15 triệu', location: 'Đà Nẵng', experience: '3 năm', deadline: '05/07/2025', tags: ['Kế toán', 'Tài chính'] },
-  { id: 4, title: 'Thiết kế đồ họa', companyName: 'Game Studio', companyLogo: 'https://via.placeholder.com/50/FFFF00/000000?text=GS', salary: '9-16 triệu', location: 'Hà Nội', experience: '1 năm', deadline: '10/07/2025', tags: ['Thiết kế', 'Graphic Design'] },
-];
-
-function JobsByIndustryPage({ industrySlug }) {
+function JobsByIndustryPage() {
   const navigate = useNavigate();
+  const { industrySlug } = useParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,18 +17,35 @@ function JobsByIndustryPage({ industrySlug }) {
   const [filters, setFilters] = useState({});
 
   const popularIndustries = [
-    { name: 'Công nghệ thông tin', slug: 'it' },
-    { name: 'Marketing & Truyền thông', slug: 'marketing' },
-    { name: 'Kinh doanh & Bán hàng', slug: 'sales' },
-    { name: 'Ngân hàng & Tài chính', slug: 'finance' },
-    { name: 'Nhân sự', slug: 'hr' },
-    { name: 'Xây dựng', slug: 'construction' },
+    { name: 'Công nghệ thông tin', slug: 'it', actualName: 'IT' }, 
+    { name: 'Marketing & Truyền thông', slug: 'marketing', actualName: 'Marketing' },
+    { name: 'Kinh doanh & Bán hàng', slug: 'sales', actualName: 'Kinh doanh' },
+    { name: 'Ngân hàng & Tài chính', slug: 'finance', actualName: 'Tài chính' },
+    { name: 'Nhân sự', slug: 'hr', actualName: 'Nhân sự' },
+    { name: 'Xây dựng', slug: 'construction', actualName: 'Xây dựng' },
+    { name: 'Software Testing', slug: 'software-testing', actualName: 'Software Testing' },
   ];
 
-  const jobsPerPage = 5;
+  // Function to get actual industry name from slug
+  const getActualIndustryName = (slug) => {
+    if (!slug) return null;
+    
+    // Map common slugs to actual database values (test với values đã hoạt động)
+    const industryMap = {
+      'it': 'IT', // Dùng "IT" vì API đã test thành công
+      'marketing': 'Marketing',
+      'sales': 'Kinh doanh',
+      'finance': 'Tài chính', 
+      'hr': 'Nhân sự',
+      'construction': 'Xây dựng',
+      'software-testing': 'Software Testing'
+    };
+    
+    return industryMap[slug] || slug;
+  };
 
   const handleNavigate = (routeName, params = {}) => {
-    let path = '/viec-lam-theo-nganh-nghe';
+    let path = '/jobs-by-industry';
     if (routeName === 'jobsByIndustry' && params.slug) {
       path += `/${params.slug}`;
     }
@@ -41,42 +53,46 @@ function JobsByIndustryPage({ industrySlug }) {
   };
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    setTimeout(() => {
+    const fetchJobsByIndustry = async () => {
       try {
-        let filteredJobs = mockJobs;
+        setLoading(true);
+        setError(null);
 
+        let jobsData = [];
         if (industrySlug) {
-          if (industrySlug === 'it') {
-            filteredJobs = filteredJobs.filter(job => job.tags.includes('Java') || job.tags.includes('Backend'));
-          } else if (industrySlug === 'marketing') {
-            filteredJobs = filteredJobs.filter(job => job.tags.includes('Marketing'));
-          } else if (industrySlug === 'finance') {
-            filteredJobs = filteredJobs.filter(job => job.tags.includes('Tài chính'));
-          }
+          // Convert slug to actual industry name for database query
+          const actualIndustryName = getActualIndustryName(industrySlug);
+          console.log(`Using actual industry name: ${actualIndustryName} for slug: ${industrySlug}`);
+          
+          // Fetch jobs by specific industry
+          jobsData = await jobService.getJobsByIndustry(actualIndustryName, { 
+            ...filters, 
+            page: currentPage - 1, 
+            size: 10 
+          });
+        } else {
+          // Fetch all jobs with industry filter from sidebar
+          const response = await jobService.getAllJobs({ 
+            ...filters, 
+            page: currentPage - 1, 
+            size: 10 
+          });
+          jobsData = response.content || response || [];
         }
 
-        if (filters.locations && filters.locations.length > 0) {
-          filteredJobs = filteredJobs.filter(job =>
-            filters.locations.some(loc => job.location.includes(loc))
-          );
-        }
-
-        const total = filteredJobs.length;
-        const pages = Math.ceil(total / jobsPerPage);
-        const startIdx = (currentPage - 1) * jobsPerPage;
-        const paginatedJobs = filteredJobs.slice(startIdx, startIdx + jobsPerPage);
-
-        setJobs(paginatedJobs);
-        setTotalPages(pages);
-        setLoading(false);
+        setJobs(jobsData);
+        setTotalPages(Math.ceil(jobsData.length / 10));
+        setError(null);
       } catch (err) {
-        setError(err);
+        console.error('Error fetching jobs by industry:', err);
+        setError('Không thể tải danh sách việc làm. Vui lòng thử lại.');
+        setJobs([]);
+      } finally {
         setLoading(false);
       }
-    }, 500);
+    };
+
+    fetchJobsByIndustry();
   }, [industrySlug, currentPage, filters]);
 
   const handleFilterChange = (newFilters) => {

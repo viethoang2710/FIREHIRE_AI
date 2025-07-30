@@ -90,7 +90,9 @@ function App() {
               <Route path="/register" element={<RegistrationPage showAlert={showAlert} />} />
               <Route path="/job-search" element={<JobSearchPage showAlert={showAlert} />} />
               <Route path="/jobs-by-industry" element={<JobsByIndustryPage showAlert={showAlert} />} />
+              <Route path="/jobs-by-industry/:industrySlug" element={<JobsByIndustryPage showAlert={showAlert} />} />
               <Route path="/jobs-by-location" element={<JobsByLocationPage showAlert={showAlert} />} />
+              <Route path="/jobs-by-location/:locationSlug" element={<JobsByLocationPage showAlert={showAlert} />} />
               <Route path="/hot-latest-jobs" element={<HotLatestJobsPage showAlert={showAlert} />} />
               <Route path="/companies" element={<CompanyProfilePage showAlert={showAlert} />} />
               <Route path="/cv-builder" element={<CVBuilderPage showAlert={showAlert} />} />

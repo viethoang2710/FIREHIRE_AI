@@ -1,41 +1,48 @@
 // src/pages/JobsByLocationPage.js
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import JobCard from '../components/JobCard';
 import FilterSidebar from '../components/FilterSidebar';
 import Pagination from '../components/Pagination';
+import jobService from '../services/jobService';
 
-
-// Mock data cho ví dụ
-const mockJobs = [
-  { id: 1, title: 'Lập trình viên Front-end', companyName: 'Tech Solutions', companyLogo: 'https://via.placeholder.com/50/FF0000/FFFFFF?text=TS', salary: '15-25 triệu', location: 'Hà Nội', experience: '3 năm', deadline: '01/07/2025', tags: ['React', 'JavaScript'] },
-  { id: 2, title: 'Nhân viên Hành chính', companyName: 'Global Services', companyLogo: 'https://via.placeholder.com/50/0000FF/FFFFFF?text=GS', salary: '7-12 triệu', location: 'TP.HCM', experience: '1 năm', deadline: '29/06/2025', tags: ['Hành chính', 'Văn phòng'] },
-  { id: 3, title: 'Kỹ sư cầu nối', companyName: 'Nihon Tech', companyLogo: 'https://via.placeholder.com/50/008000/FFFFFF?text=NT', salary: '25-40 triệu', location: 'Đà Nẵng', experience: '4 năm', deadline: '03/07/2025', tags: ['Cầu nối', 'Nhật Bản'] },
-  { id: 4, title: 'Marketing Executive', companyName: 'Creative Agency', companyLogo: 'https://via.placeholder.com/50/FFFF00/000000?text=CA', salary: '9-16 triệu', location: 'Hà Nội', experience: '2 năm', deadline: '08/07/2025', tags: ['Marketing', 'Digital'] },
-];
-
-
-function JobsByLocationPage({ locationSlug }) {
+function JobsByLocationPage() {
   const navigate = useNavigate();
+  const { locationSlug } = useParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({});
 
-
-  // Danh sách địa điểm phổ biến
+  // Danh sách địa điểm phổ biến với mapping slug -> actual name
   const popularLocations = [
-    { name: 'Hà Nội', slug: 'ha-noi' },
-    { name: 'TP. Hồ Chí Minh', slug: 'ho-chi-minh' },
-    { name: 'Đà Nẵng', slug: 'da-nang' },
-    { name: 'Hải Phòng', slug: 'hai-phong' },
-    { name: 'Cần Thơ', slug: 'can-tho' },
+    { name: 'Hà Nội', slug: 'ha-noi', actualName: 'HÃ  Ná»i' },
+    { name: 'TP. Hồ Chí Minh', slug: 'ho-chi-minh', actualName: 'Há» ChÃ­ Minh' },
+    { name: 'Đà Nẵng', slug: 'da-nang', actualName: 'Äà Náºµng' },
+    { name: 'Hải Phòng', slug: 'hai-phong', actualName: 'Háº£i PhÃ²ng' },
+    { name: 'Cần Thơ', slug: 'can-tho', actualName: 'Cáº§n ThÆ¡' },
   ];
 
+  // Function to get actual location name from slug  
+  const getActualLocationName = (slug) => {
+    if (!slug) return null;
+    
+    // Map common slugs to actual database values (dùng values đã test thành công)
+    const locationMap = {
+      'ha-noi': 'Ha Noi', // Dùng "Ha Noi" vì API đã test thành công 
+      'ho-chi-minh': 'Ho Chi Minh City',
+      'da-nang': 'Da Nang',
+      'hai-phong': 'Hai Phong', 
+      'can-tho': 'Can Tho'
+    };
+    
+    return locationMap[slug] || slug;
+  };
+
   const handleNavigate = (routeName, params = {}) => {
-    let path = '/viec-lam-theo-dia-diem';
+    let path = '/jobs-by-location';
     if (routeName === 'jobsByLocation' && params.slug) {
       path += `/${params.slug}`;
     }
@@ -43,25 +50,46 @@ function JobsByLocationPage({ locationSlug }) {
   };
 
   useEffect(() => {
-    console.log(`Fetching jobs for location: ${locationSlug || 'all'} with filters:`, filters);
+    const fetchJobsByLocation = async () => {
+      try {
+        console.log(`Fetching jobs for location: ${locationSlug || 'all'} with filters:`, filters);
+        setLoading(true);
+        
+        let jobsData = [];
+        if (locationSlug) {
+          // Convert slug to actual location name for database query
+          const actualLocationName = getActualLocationName(locationSlug);
+          console.log(`Using actual location name: ${actualLocationName} for slug: ${locationSlug}`);
+          
+          // Fetch jobs by specific location
+          jobsData = await jobService.getJobsByLocation(actualLocationName, { 
+            ...filters, 
+            page: currentPage - 1, 
+            size: 10 
+          });
+        } else {
+          // Fetch all jobs with location filter from sidebar
+          const response = await jobService.getAllJobs({ 
+            ...filters, 
+            page: currentPage - 1, 
+            size: 10 
+          });
+          jobsData = response.content || response || [];
+        }
 
-    setLoading(true);
-    setTimeout(() => {
-      let filteredJobs = mockJobs;
-      if (locationSlug) {
-        // Giả lập lọc theo địa điểm
-        filteredJobs = mockJobs.filter(job => job.location.toLowerCase().includes(locationSlug.replace(/-/g, ' ')));
+        setJobs(jobsData);
+        setTotalPages(Math.ceil(jobsData.length / 10));
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching jobs by location:', err);
+        setError('Không thể tải danh sách việc làm. Vui lòng thử lại.');
+        setJobs([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Áp dụng các bộ lọc từ sidebar
-      if (filters.industries && filters.industries.length > 0) {
-        // Logic lọc theo ngành nghề từ sidebar
-      }
-
-      setJobs(filteredJobs);
-      setTotalPages(Math.ceil(filteredJobs.length / 5));
-      setLoading(false);
-    }, 500);
+    fetchJobsByLocation();
   }, [locationSlug, currentPage, filters]);
 
   const handleFilterChange = (newFilters) => {

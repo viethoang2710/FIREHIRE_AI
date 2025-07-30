@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Applicant Jobs API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test Applicant Jobs API</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Get All Jobs (Public API)</h3>
+        <button onclick="testGetAllJobs()">Test Get All Jobs</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Get Jobs with Status Filter</h3>
+        <button onclick="testGetJobsWithStatus()">Test Get Jobs with Status Filter</button>
+        <div id="result2" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Get Specific Job</h3>
+        <input type="number" id="jobId" placeholder="Job ID" value="5">
+        <button onclick="testGetJobById()">Test Get Job by ID</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        async function testGetAllJobs() {
+            const resultDiv = document.getElementById('result1');
+            try {
+                resultDiv.innerHTML = 'Loading...';
+                
+                const response = await fetch(`${API_BASE}/api/jobs`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h4>✅ Success!</h4>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response Success:</strong> ${data.success}</p>
+                    <p><strong>Jobs Count:</strong> ${data.data ? data.data.length : 0}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h4>❌ Error!</h4>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testGetJobsWithStatus() {
+            const resultDiv = document.getElementById('result2');
+            try {
+                resultDiv.innerHTML = 'Loading...';
+                
+                const response = await fetch(`${API_BASE}/api/jobs?status=Đang hiển thị`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h4>✅ Success!</h4>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response Success:</strong> ${data.success}</p>
+                    <p><strong>Jobs Count:</strong> ${data.data ? data.data.length : 0}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h4>❌ Error!</h4>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testGetJobById() {
+            const resultDiv = document.getElementById('result3');
+            const jobId = document.getElementById('jobId').value;
+            
+            if (!jobId) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<h4>❌ Please enter a Job ID</h4>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = 'Loading...';
+                
+                const response = await fetch(`${API_BASE}/api/jobs/${jobId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h4>✅ Success!</h4>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response Success:</strong> ${data.success}</p>
+                    <p><strong>Job Title:</strong> ${data.data ? data.data.title : 'N/A'}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h4>❌ Error!</h4>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        // Auto-run first test on page load
+        window.onload = function() {
+            testGetAllJobs();
+        };
+    </script>
+</body>
+</html>

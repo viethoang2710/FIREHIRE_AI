@@ -49,6 +49,7 @@ public class JobPostingService {
                     .experienceLevel(request.getExperienceLevel())
                     .skillsRequired(request.getSkillsRequired())
                     .benefits(request.getBenefits())
+                    .companyName(request.getCompanyName())
                     .status("ACTIVE")
                     .createdDate(LocalDateTime.now())
                     .build();
@@ -94,6 +95,8 @@ public class JobPostingService {
             existingJob.setSkillsRequired(request.getSkillsRequired() != null ? request.getSkillsRequired()
                     : existingJob.getSkillsRequired());
             existingJob.setBenefits(request.getBenefits() != null ? request.getBenefits() : existingJob.getBenefits());
+            existingJob.setCompanyName(
+                    request.getCompanyName() != null ? request.getCompanyName() : existingJob.getCompanyName());
             existingJob.setStatus(request.getStatus() != null ? request.getStatus() : existingJob.getStatus());
             existingJob.setUpdatedDate(LocalDateTime.now());
 
@@ -184,7 +187,8 @@ public class JobPostingService {
 
     public ApiResponse<List<JobPostingDTO>> getHotJobs(int limit) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, limit);
-        List<JobPosting> jobPostings = jobPostingRepository.findHotJobs(pageable);
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        List<JobPosting> jobPostings = jobPostingRepository.findHotJobs(weekAgo, pageable);
 
         List<JobPostingDTO> jobPostingDTOs = jobPostings.stream()
                 .map(JobPostingDTO::fromEntity)

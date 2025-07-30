@@ -2,32 +2,34 @@
 import React, { useState, useEffect } from 'react';
 import JobCard from '../components/JobCard';
 import Pagination from '../components/Pagination';
-
-// Mock data cho ví dụ
-const mockHotJobs = [
-  { id: 1, title: 'Blockchain Developer (Hot)', companyName: 'Crypto Lab', companyLogo: 'https://via.placeholder.com/50/000000/FFFFFF?text=CL', salary: '30-60 triệu', location: 'TP.HCM', experience: '3 năm', deadline: '25/06/2025', tags: ['Blockchain', 'Solidity', 'Hot'] },
-  { id: 2, title: 'AI Engineer (Mới nhất)', companyName: 'AI Solutions Inc.', companyLogo: 'https://via.placeholder.com/50/FF4500/FFFFFF?text=AI', salary: '25-50 triệu', location: 'Hà Nội', experience: '2 năm', deadline: '01/07/2025', tags: ['AI', 'Machine Learning', 'Python', 'Mới'] },
-  { id: 3, title: 'Trưởng phòng Marketing (Hot)', companyName: 'Luxury Brand', companyLogo: 'https://via.placeholder.com/50/8A2BE2/FFFFFF?text=LB', salary: '20-35 triệu', location: 'Hà Nội', experience: '5 năm', deadline: '20/06/2025', tags: ['Marketing', 'Quản lý', 'Hot'] },
-  { id: 4, title: 'Data Analyst (Mới nhất)', companyName: 'Data Insights', companyLogo: 'https://via.placeholder.com/50/00CED1/FFFFFF?text=DI', salary: '12-22 triệu', location: 'TP.HCM', experience: '1 năm', deadline: '07/07/2025', tags: ['Data', 'Analytics', 'SQL', 'Mới'] },
-  { id: 5, title: 'Chuyên viên tuyển dụng', companyName: 'HR Connect', companyLogo: 'https://via.placeholder.com/50/FFD700/000000?text=HC', salary: '8-15 triệu', location: 'Đà Nẵng', experience: '2 năm', deadline: '15/07/2025', tags: ['Tuyển dụng', 'HR'] },
-];
+import jobService from '../services/jobService';
 
 function HotLatestJobsPage({ navigate }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(8); // Giả định
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    // Fetch hot/latest jobs from API
-    setLoading(true);
-    setTimeout(() => {
-      // Trong thực tế, bạn sẽ có logic để phân biệt hot/latest từ API
-      setJobs(mockHotJobs);
-      setTotalPages(Math.ceil(mockHotJobs.length / 5)); // 5 job mỗi trang
-      setLoading(false);
-    }, 500);
+    const fetchJobs = async () => {
+      try {
+        setLoading(true);
+        // Fetch hot and latest jobs from API
+        const response = await jobService.getHotLatestJobs();
+        const hotLatestJobs = response.content || [];
+        setJobs(hotLatestJobs);
+        setTotalPages(Math.ceil(hotLatestJobs.length / 10)); // 10 jobs per page
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching hot/latest jobs:', err);
+        setError('Không thể tải danh sách việc làm. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
   }, [currentPage]);
 
   const handlePageChange = (page) => {

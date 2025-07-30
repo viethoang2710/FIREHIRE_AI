@@ -339,6 +339,7 @@ const createJob = async (jobData) => {
       experienceLevel: jobDataToSubmit.experienceLevel || "Không yêu cầu kinh nghiệm",
       skillsRequired: jobDataToSubmit.requirements || "",
       benefits: jobDataToSubmit.benefits || "",
+      companyName: jobDataToSubmit.companyName || "",
       status: jobDataToSubmit.status
     };
     
@@ -485,6 +486,7 @@ const updateJob = async (jobId, jobData) => {
       experienceLevel: jobData.experienceLevel || "Không yêu cầu kinh nghiệm",
       skillsRequired: jobData.requirements || jobData.skillsRequired,
       benefits: jobData.benefits,
+      companyName: jobData.companyName || "",
       status: jobData.status === "Đang hiển thị" ? "ACTIVE" : jobData.status
     };
     

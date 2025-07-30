@@ -41,7 +41,11 @@ public class JobPostingDTO {
             return null;
 
         String companyName = null;
-        if (jobPosting.getEmployer() != null) {
+        // Ưu tiên cột CompanyName mới trong Job_Postings, fallback sang Employer nếu
+        // null
+        if (jobPosting.getCompanyName() != null && !jobPosting.getCompanyName().isEmpty()) {
+            companyName = jobPosting.getCompanyName();
+        } else if (jobPosting.getEmployer() != null) {
             companyName = jobPosting.getEmployer().getCompanyName();
         }
 
