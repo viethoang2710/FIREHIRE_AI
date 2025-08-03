@@ -113,10 +113,11 @@ const AuthService = {
         employerId = response.data.employerId;
       } else if (response.data.user && response.data.user.employerId) {
         employerId = response.data.user.employerId;
-      } else if (roleValue === 'EMPLOYER' && response.data.user && response.data.user.id) {
+      } else if (roleValue === 'EMPLOYER' && (response.data.userId || response.data.user?.id)) {
         // Nếu là employer, fetch employerId từ API
         try {
-          const employerRes = await api.get(`/employers/user/${response.data.user.id}`);
+          const userId = response.data.userId || response.data.user?.id;
+          const employerRes = await api.get(`/employers/user/${userId}`);
           if (employerRes.data && employerRes.data.data && employerRes.data.data.employerId) {
             employerId = employerRes.data.data.employerId;
           }
@@ -130,7 +131,7 @@ const AuthService = {
         role: roleValue,
         fullName: response.data.fullName || response.data.user?.fullName || 'User',
         employerId: employerId,
-        id: response.data.user?.id || null
+        id: response.data.userId || response.data.user?.id || null
       };
 
       localStorage.setItem('user', JSON.stringify(userData));

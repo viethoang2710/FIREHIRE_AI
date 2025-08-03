@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Database Column Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .error-box {
+            background: #fee;
+            border: 1px solid #fcc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #c33;
+        }
+        .success-box {
+            background: #efe;
+            border: 1px solid #cfc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #3c3;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #0c5460;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #856404;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Database Column Fix</h1>
+        
+        <div class="warning-box">
+            <strong>⚠️ Problem Identified:</strong><br>
+            The <code>ProfilePicture</code> column in database is too small to store images.<br>
+            Error: "Data too long for column 'profile_picture'"<br>
+            <strong>Solution:</strong> Change column type to LONGBLOB
+        </div>
+
+        <div class="info-box">
+            <strong>🔍 What this fix does:</strong><br>
+            1. Check current column type in database<br>
+            2. Change ProfilePicture column to LONGBLOB (supports up to 4GB)<br>
+            3. Update related columns (filename, file size)<br>
+            4. Verify the changes were applied correctly
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h2>Step 1: Check Current Column Type</h2>
+            <button onclick="checkColumnType()">🔍 Check Column Type</button>
+            <div id="check-results"></div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h2>Step 2: Fix Column Type</h2>
+            <button class="danger" onclick="fixColumn()">🔧 Fix Database Column</button>
+            <div id="fix-results"></div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h2>Step 3: Test Image Upload</h2>
+            <div class="info-box">
+                After fixing the column, go back to the Advanced Debug page and test image upload again.
+            </div>
+            <button onclick="openDebugPage()">📸 Open Image Upload Test</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        function displayResult(elementId, result, title = '') {
+            const element = document.getElementById(elementId);
+            let html = '';
+            
+            if (title) {
+                html += `<h3>${title}</h3>`;
+            }
+            
+            if (result.success) {
+                html += '<div class="success-box">';
+                html += '<strong>✅ SUCCESS</strong><br>';
+                if (result.message) {
+                    html += `Message: ${result.message}<br>`;
+                }
+                html += '<div class="json-display">';
+                html += JSON.stringify(result.data || result, null, 2);
+                html += '</div>';
+                html += '</div>';
+            } else {
+                html += '<div class="error-box">';
+                html += '<strong>❌ ERROR</strong><br>';
+                if (result.error) {
+                    html += `Error: ${result.error}<br>`;
+                }
+                if (result.status) {
+                    html += `HTTP Status: ${result.status}<br>`;
+                }
+                html += '<div class="json-display">';
+                html += JSON.stringify(result.data || result, null, 2);
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            element.innerHTML = html;
+        }
+
+        async function checkColumnType() {
+            console.log('Checking column type...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/check-column-type`);
+                const result = await response.json();
+                
+                console.log('Column type check result:', result);
+                displayResult('check-results', result, '🔍 Column Type Check Results');
+                
+            } catch (error) {
+                console.error('Column type check failed:', error);
+                displayResult('check-results', { 
+                    success: false, 
+                    error: error.message 
+                }, '❌ Check Failed');
+            }
+        }
+
+        async function fixColumn() {
+            console.log('Fixing column type...');
+            
+            if (!confirm('Are you sure you want to modify the database column? This will change the ProfilePicture column to LONGBLOB.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/fix-profile-picture-column`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                console.log('Column fix result:', result);
+                displayResult('fix-results', result, '🔧 Column Fix Results');
+                
+                if (result.success) {
+                    setTimeout(() => {
+                        alert('✅ Database column fixed successfully!\n\nYou can now test image upload again.');
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                console.error('Column fix failed:', error);
+                displayResult('fix-results', { 
+                    success: false, 
+                    error: error.message 
+                }, '❌ Fix Failed');
+            }
+        }
+
+        function openDebugPage() {
+            window.open('debug-image-advanced.html', '_blank');
+        }
+
+        // Auto-check column type on page load
+        window.addEventListener('load', function() {
+            console.log('Database fix page loaded');
+            setTimeout(checkColumnType, 1000);
+        });
+    </script>
+</body>
+</html>

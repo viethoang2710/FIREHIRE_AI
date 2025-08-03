@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Advanced Debug - Profile Image Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .error-box {
+            background: #fee;
+            border: 1px solid #fcc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #c33;
+        }
+        .success-box {
+            background: #efe;
+            border: 1px solid #cfc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #3c3;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #0c5460;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #545b62;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Advanced Debug - Profile Image Upload</h1>
+        
+        <div class="info-box">
+            <strong>📋 Debug Steps:</strong><br>
+            1. First test image analysis to check file properties<br>
+            2. Then test step-by-step upload to identify exact failure point<br>
+            3. Finally try the actual profile update with detailed logging
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 1. Image Analysis</h2>
+            <div class="form-group">
+                <label>Select Image to Analyze:</label>
+                <input type="file" id="analyzeImageFile" accept="image/*" required>
+            </div>
+            <button onclick="analyzeImage()">🔬 Analyze Image Properties</button>
+            <div id="analyze-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 2. Step-by-Step Upload Test</h2>
+            <div class="form-group">
+                <label>User ID to test with:</label>
+                <input type="number" id="testUserId" value="1002" required>
+            </div>
+            <div class="form-group">
+                <label>Select Image for Upload Test:</label>
+                <input type="file" id="stepTestImageFile" accept="image/*" required>
+            </div>
+            <button onclick="testStepByStep()">🎯 Test Step by Step</button>
+            <div id="step-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚀 3. Full Profile Image Upload</h2>
+            <div class="form-group">
+                <label>User ID:</label>
+                <input type="number" id="fullTestUserId" value="1002" required>
+            </div>
+            <div class="form-group">
+                <label>Select Image:</label>
+                <input type="file" id="fullTestImageFile" accept="image/*" required>
+            </div>
+            <button onclick="testFullUpload()">📸 Upload Profile Image</button>
+            <div id="full-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Debug Logs</h2>
+            <div id="logs" class="log-area"></div>
+            <button class="secondary" onclick="clearLogs()">🧹 Clear Logs</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').textContent = '';
+        }
+
+        function displayResult(elementId, result, title = '') {
+            const element = document.getElementById(elementId);
+            let html = '';
+            
+            if (title) {
+                html += `<h3>${title}</h3>`;
+            }
+            
+            if (result.success) {
+                html += '<div class="success-box">';
+                html += '<strong>✅ SUCCESS</strong><br>';
+                if (result.message) {
+                    html += `Message: ${result.message}<br>`;
+                }
+                html += '<div class="json-display">';
+                html += JSON.stringify(result.data || result, null, 2);
+                html += '</div>';
+                html += '</div>';
+            } else {
+                html += '<div class="error-box">';
+                html += '<strong>❌ ERROR</strong><br>';
+                if (result.error) {
+                    html += `Error: ${result.error}<br>`;
+                }
+                if (result.status) {
+                    html += `HTTP Status: ${result.status}<br>`;
+                }
+                html += '<div class="json-display">';
+                html += JSON.stringify(result.data || result, null, 2);
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            element.innerHTML = html;
+        }
+
+        async function analyzeImage() {
+            log('Starting image analysis...');
+            
+            const fileInput = document.getElementById('analyzeImageFile');
+            if (!fileInput.files[0]) {
+                log('No file selected!', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            log(`Analyzing file: ${file.name} (${file.size} bytes)`);
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/debug/image-info`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    log('Image analysis completed successfully', 'success');
+                    displayResult('analyze-results', result, '🔬 Image Analysis Results');
+                } else {
+                    log(`Image analysis failed: ${result.error}`, 'error');
+                    displayResult('analyze-results', result, '❌ Analysis Failed');
+                }
+                
+            } catch (error) {
+                log(`Analysis request failed: ${error.message}`, 'error');
+                displayResult('analyze-results', { success: false, error: error.message }, '❌ Request Failed');
+            }
+        }
+
+        async function testStepByStep() {
+            log('Starting step-by-step upload test...');
+            
+            const userId = document.getElementById('testUserId').value;
+            const fileInput = document.getElementById('stepTestImageFile');
+            
+            if (!userId) {
+                log('User ID is required!', 'error');
+                return;
+            }
+            
+            if (!fileInput.files[0]) {
+                log('No file selected!', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            log(`Testing upload for User ID: ${userId}, File: ${file.name} (${file.size} bytes)`);
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/debug/test-profile-image/${userId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    log('Step-by-step test completed successfully', 'success');
+                    displayResult('step-results', result, '🎯 Step-by-Step Test Results');
+                } else {
+                    log(`Step-by-step test failed: ${result.error}`, 'error');
+                    displayResult('step-results', result, '❌ Step-by-Step Test Failed');
+                }
+                
+            } catch (error) {
+                log(`Step-by-step test request failed: ${error.message}`, 'error');
+                displayResult('step-results', { success: false, error: error.message }, '❌ Test Request Failed');
+            }
+        }
+
+        async function testFullUpload() {
+            log('Starting full profile image upload test...');
+            
+            const userId = document.getElementById('fullTestUserId').value;
+            const fileInput = document.getElementById('fullTestImageFile');
+            
+            if (!userId) {
+                log('User ID is required!', 'error');
+                return;
+            }
+            
+            if (!fileInput.files[0]) {
+                log('No file selected!', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            log(`Testing full upload for User ID: ${userId}, File: ${file.name} (${file.size} bytes)`);
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/profile/${userId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const responseText = await response.text();
+                let result;
+                
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    result = {
+                        success: false,
+                        error: 'Invalid JSON response',
+                        rawResponse: responseText,
+                        status: response.status
+                    };
+                }
+                
+                if (response.ok && result.success !== false) {
+                    log('Full upload test completed successfully', 'success');
+                    displayResult('full-results', result, '🚀 Full Upload Test Results');
+                } else {
+                    log(`Full upload test failed: ${result.error || 'Unknown error'}`, 'error');
+                    displayResult('full-results', { ...result, status: response.status }, '❌ Full Upload Test Failed');
+                }
+                
+            } catch (error) {
+                log(`Full upload test request failed: ${error.message}`, 'error');
+                displayResult('full-results', { success: false, error: error.message }, '❌ Upload Request Failed');
+            }
+        }
+
+        // Auto-start with connection test
+        window.addEventListener('load', function() {
+            log('🔧 Advanced Debug page loaded');
+            log('Ready to debug profile image upload issues');
+        });
+    </script>
+</body>
+</html>

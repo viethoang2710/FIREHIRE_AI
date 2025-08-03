@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Profile Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        input[type="file"] { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug Profile Image Upload</h1>
+        
+        <div class="test-section">
+            <h3>1. Test Backend Connection</h3>
+            <button onclick="testConnection()">Test Backend Health</button>
+            <div id="connectionResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Get Profile</h3>
+            <button onclick="testGetProfile()">Get Profile (User ID: 1)</button>
+            <div id="profileResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test Simple Profile Update (No Image)</h3>
+            <button onclick="testSimpleUpdate()">Update Profile Only</button>
+            <div id="simpleUpdateResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Test Image Upload</h3>
+            <input type="file" id="imageFile" accept="image/*">
+            <br>
+            <button onclick="testImageUpload()">Upload Image Only</button>
+            <div id="imageUploadResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Test Profile + Image Update</h3>
+            <input type="file" id="profileImageFile" accept="image/*">
+            <br>
+            <button onclick="testProfileWithImage()">Update Profile + Image</button>
+            <div id="profileImageResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/profile';
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                console.log('Making request to:', url, options);
+                const response = await fetch(url, options);
+                const contentType = response.headers.get('content-type');
+                
+                let data;
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+                
+                return { 
+                    success: response.ok, 
+                    data, 
+                    status: response.status,
+                    statusText: response.statusText
+                };
+            } catch (error) {
+                console.error('Request error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testConnection() {
+            const result = await makeRequest('http://localhost:8080/actuator/health');
+            if (!result.success) {
+                // If actuator doesn't exist, try a simple API call
+                const fallback = await makeRequest(`${API_BASE}/1`);
+                displayResult('connectionResult', fallback.success ? 
+                    { success: true, data: "Backend is running!" } : fallback);
+            } else {
+                displayResult('connectionResult', result);
+            }
+        }
+
+        async function testGetProfile() {
+            const result = await makeRequest(`${API_BASE}/1/full`);
+            displayResult('profileResult', result);
+        }
+
+        async function testSimpleUpdate() {
+            const profileData = {
+                title: "Test Developer",
+                bio: "Testing profile update",
+                skills: "Testing, Debugging",
+                experience: "1 year",
+                workPreference: "FULL_TIME"
+            };
+
+            const result = await makeRequest(`${API_BASE}/1`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(profileData)
+            });
+            displayResult('simpleUpdateResult', result);
+        }
+
+        async function testImageUpload() {
+            const fileInput = document.getElementById('imageFile');
+            if (!fileInput.files[0]) {
+                displayResult('imageUploadResult', { success: false, error: 'Please select an image first' });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            const result = await makeRequest(`${API_BASE}/1/image`, {
+                method: 'POST',
+                body: formData
+            });
+            displayResult('imageUploadResult', result);
+        }
+
+        async function testProfileWithImage() {
+            const fileInput = document.getElementById('profileImageFile');
+            if (!fileInput.files[0]) {
+                displayResult('profileImageResult', { success: false, error: 'Please select an image first' });
+                return;
+            }
+
+            const formData = new FormData();
+            
+            // Add profile data
+            const profileData = {
+                title: "Test Developer with Image",
+                bio: "Testing profile update with image",
+                skills: "React, Node.js, Testing",
+                experience: "2 years",
+                workPreference: "FULL_TIME"
+            };
+            
+            formData.append('profile', new Blob([JSON.stringify(profileData)], {
+                type: 'application/json'
+            }));
+            
+            // Add image
+            formData.append('profileImage', fileInput.files[0]);
+
+            console.log('FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
+
+            const result = await makeRequest(`${API_BASE}/1/with-image`, {
+                method: 'POST',
+                body: formData
+            });
+            displayResult('profileImageResult', result);
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            const className = result.success ? 'success' : 'error';
+            
+            element.innerHTML = `
+                <div class="${className}">
+                    <strong>Status:</strong> ${result.success ? 'SUCCESS' : 'ERROR'}<br>
+                    <strong>HTTP Status:</strong> ${result.status || 'N/A'} ${result.statusText || ''}<br>
+                    <strong>Response:</strong>
+                    <pre>${JSON.stringify(result.data || result.error, null, 2)}</pre>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

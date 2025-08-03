@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Users, Briefcase, BarChart3, Activity, Settings, Shield, LogOut, Download } from 'lucide-react';
+import { Users, Briefcase, BarChart3, Activity, Settings, Shield, LogOut, Download, FileText } from 'lucide-react';
 import '../styles/AdminDashboard.css';
 
 // Import admin components
@@ -11,6 +11,7 @@ import SystemStatistics from '../components/Admin/SystemStatistics';
 import RecentActivity from '../components/Admin/RecentActivity';
 import NotificationSystem from '../components/Admin/NotificationSystem';
 import DataExport from '../components/Admin/DataExport';
+import ApplicationManagement from '../components/Admin/ApplicationManagement';
 
 function AdminDashboardPage() {
   const { auth } = useAuth();
@@ -47,6 +48,7 @@ function AdminDashboardPage() {
     { id: 'overview', label: 'Tổng quan', icon: BarChart3 },
     { id: 'users', label: 'Quản lý người dùng', icon: Users },
     { id: 'jobs', label: 'Quản lý công việc', icon: Briefcase },
+    { id: 'applications', label: 'Quản lý CV ứng tuyển', icon: FileText },
     { id: 'statistics', label: 'Thống kê hệ thống', icon: BarChart3 },
     { id: 'activity', label: 'Hoạt động gần đây', icon: Activity },
     { id: 'settings', label: 'Cài đặt hệ thống', icon: Settings }
@@ -60,6 +62,8 @@ function AdminDashboardPage() {
         return <UserManagement />;
       case 'jobs':
         return <JobManagement />;
+      case 'applications':
+        return <ApplicationManagement showAlert={(message, type) => console.log(message, type)} />;
       case 'statistics':
         return <SystemStatistics />;
       case 'activity':

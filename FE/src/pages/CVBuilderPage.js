@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { User, Briefcase, Award, Star, Edit, PlusCircle, Trash2, Download, Settings, CheckCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-
+import { useAuth } from '../hooks/useAuth';
+import cvService from '../services/cvService';
 
 // Import các component đã được phân tách
 import AccordionSection from '../components/UI/AccordionSection';
@@ -12,12 +12,16 @@ import CVPreview from '../components/CVBuilder/CVPreview';
 
 
 const CVBuilderPage = () => {
+  const { auth } = useAuth();
+  
   // State quản lý mục nào đang được mở
   const [activeAccordion, setActiveAccordion] = useState('personalInfo');
   
   // State quản lý trạng thái tải xuống
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  
+  const [cvTitle, setCvTitle] = useState('CV của tôi');
   
   // State chứa toàn bộ dữ liệu của CV
   const [cvData, setCvData] = useState({
@@ -208,33 +212,6 @@ const CVBuilderPage = () => {
     alert(`Element found: ${preview ? 'Yes' : 'No'}\nDimensions: ${preview?.offsetWidth}x${preview?.offsetHeight}`);
   };
 
-  // Hàm lưu dữ liệu vào localStorage
-  const handleSaveData = () => {
-    try {
-      localStorage.setItem('cvData', JSON.stringify(cvData));
-      alert('Dữ liệu đã được lưu thành công!');
-    } catch (error) {
-      console.error('Lỗi khi lưu dữ liệu:', error);
-      alert('Có lỗi xảy ra khi lưu dữ liệu.');
-    }
-  };
-
-  // Hàm tải dữ liệu từ localStorage
-  const handleLoadData = () => {
-    try {
-      const savedData = localStorage.getItem('cvData');
-      if (savedData) {
-        setCvData(JSON.parse(savedData));
-        alert('Dữ liệu đã được tải thành công!');
-      } else {
-        alert('Không tìm thấy dữ liệu đã lưu.');
-      }
-    } catch (error) {
-      console.error('Lỗi khi tải dữ liệu:', error);
-      alert('Có lỗi xảy ra khi tải dữ liệu.');
-    }
-  };
-
   return (
     <div className="min-h-[calc(100vh-68px)] flex flex-col lg:flex-row bg-gray-200 font-sans">
       {/* --- Left Panel: Form --- */}
@@ -244,21 +221,16 @@ const CVBuilderPage = () => {
             <h1 className="text-2xl font-bold mb-1">Trình tạo CV Online</h1>
             <p className="text-sm text-gray-500">Điền thông tin vào các mục bên dưới.</p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSaveData}
-              className="px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              title="Lưu dữ liệu"
-            >
-              Lưu
-            </button>
-            <button
-              onClick={handleLoadData}
-              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              title="Tải dữ liệu đã lưu"
-            >
-              Tải
-            </button>
+          <div className="flex gap-2 items-center">
+            {/* Input tiêu đề CV */}
+            <input
+              type="text"
+              value={cvTitle}
+              onChange={(e) => setCvTitle(e.target.value)}
+              placeholder="Tên CV..."
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            
             <button
               onClick={handleNewCV}
               className="px-3 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"

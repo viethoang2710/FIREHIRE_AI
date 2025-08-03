@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Quick Fix - Profile Image Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .error-box {
+            background: #fee;
+            border: 1px solid #fcc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #c33;
+        }
+        .success-box {
+            background: #efe;
+            border: 1px solid #cfc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #3c3;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #856404;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.success {
+            background: #28a745;
+        }
+        .step {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Quick Fix - Profile Image Upload Error</h1>
+        
+        <div class="warning-box">
+            <strong>🔥 Phát hiện lỗi:</strong> "Data truncation: Data too long for column 'profile_picture'"<br>
+            <strong>Nguyên nhân:</strong> Database column ProfilePicture quá nhỏ để chứa ảnh<br>
+            <strong>Giải pháp:</strong> Fix database column thành LONGBLOB
+        </div>
+
+        <div class="step">
+            <h2>🔧 Step 1: Fix Database Column</h2>
+            <p>Thay đổi column ProfilePicture thành LONGBLOB để hỗ trợ ảnh lớn hơn</p>
+            <button class="danger" onclick="fixDatabaseColumn()">⚡ Fix Database Now</button>
+            <div id="fix-result"></div>
+        </div>
+
+        <div class="step">
+            <h2>🧪 Step 2: Test Image Upload</h2>
+            <div style="margin: 10px 0;">
+                <label>User ID: </label>
+                <input type="number" id="userId" value="19" style="padding: 8px; margin: 5px;">
+            </div>
+            <div style="margin: 10px 0;">
+                <input type="file" id="imageFile" accept="image/*" style="padding: 8px;">
+            </div>
+            <button class="success" onclick="testImageUpload()">📸 Test Upload</button>
+            <div id="test-result"></div>
+        </div>
+
+        <div class="step">
+            <h2>📊 Backend Status</h2>
+            <button onclick="checkBackend()">🔍 Check Backend</button>
+            <div id="status-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        function displayResult(elementId, result, isSuccess = null) {
+            const element = document.getElementById(elementId);
+            let className = 'error-box';
+            let icon = '❌';
+            
+            if (isSuccess === true || result.success) {
+                className = 'success-box';
+                icon = '✅';
+            } else if (isSuccess === null) {
+                className = 'warning-box';
+                icon = 'ℹ️';
+            }
+            
+            let html = `<div class="${className}">`;
+            html += `<strong>${icon} ${result.message || (result.success ? 'SUCCESS' : 'ERROR')}</strong><br>`;
+            
+            if (result.error) {
+                html += `Error: ${result.error}<br>`;
+            }
+            
+            if (result.data) {
+                html += '<div class="json-display">';
+                html += JSON.stringify(result.data, null, 2);
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            element.innerHTML = html;
+        }
+
+        async function fixDatabaseColumn() {
+            console.log('Fixing database column...');
+            
+            try {
+                // First check if admin endpoints exist
+                const response = await fetch(`${API_BASE}/admin/fix-profile-picture-column`, {
+                    method: 'POST'
+                });
+                
+                if (response.status === 404) {
+                    displayResult('fix-result', {
+                        success: false,
+                        error: 'Admin endpoints not available. Please fix manually in MySQL Workbench',
+                        message: 'Manual Fix Required',
+                        data: {
+                            sqlCommand: 'ALTER TABLE user_profiles MODIFY COLUMN ProfilePicture LONGBLOB;',
+                            instruction: 'Run this command in MySQL Workbench'
+                        }
+                    });
+                    return;
+                }
+                
+                const result = await response.json();
+                displayResult('fix-result', result);
+                
+                if (result.success) {
+                    setTimeout(() => {
+                        alert('✅ Database fixed! You can now test image upload.');
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                displayResult('fix-result', {
+                    success: false,
+                    error: error.message,
+                    message: 'Fix Failed - Try Manual Method',
+                    data: {
+                        manualFix: 'Open MySQL Workbench and run: ALTER TABLE user_profiles MODIFY COLUMN ProfilePicture LONGBLOB;'
+                    }
+                });
+            }
+        }
+
+        async function testImageUpload() {
+            const userId = document.getElementById('userId').value;
+            const fileInput = document.getElementById('imageFile');
+            
+            if (!userId) {
+                displayResult('test-result', {
+                    success: false,
+                    error: 'Please enter User ID'
+                });
+                return;
+            }
+            
+            if (!fileInput.files[0]) {
+                displayResult('test-result', {
+                    success: false,
+                    error: 'Please select an image file'
+                });
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            console.log(`Testing upload: User ${userId}, File: ${file.name} (${file.size} bytes)`);
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/profile/${userId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    displayResult('test-result', {
+                        success: true,
+                        message: 'Image uploaded successfully!',
+                        data: result
+                    });
+                } else {
+                    displayResult('test-result', {
+                        success: false,
+                        error: result.error || 'Upload failed',
+                        data: result
+                    });
+                }
+                
+            } catch (error) {
+                displayResult('test-result', {
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+
+        async function checkBackend() {
+            try {
+                const response = await fetch(`${API_BASE}/profile/1`);
+                if (response.ok) {
+                    displayResult('status-result', {
+                        success: true,
+                        message: 'Backend is running and responsive'
+                    });
+                } else {
+                    displayResult('status-result', {
+                        success: false,
+                        error: `Backend responded with status ${response.status}`
+                    });
+                }
+            } catch (error) {
+                displayResult('status-result', {
+                    success: false,
+                    error: 'Backend is not running or not accessible: ' + error.message
+                });
+            }
+        }
+
+        // Auto-check backend on load
+        window.addEventListener('load', function() {
+            setTimeout(checkBackend, 1000);
+        });
+    </script>
+</body>
+</html>

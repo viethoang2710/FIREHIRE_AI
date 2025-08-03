@@ -28,6 +28,9 @@ public class CVService {
     @Autowired
     private CVTemplateRepository cvTemplateRepository;
 
+    @Autowired
+    private com.example.firehire_ai.repository.CVSectionRepository cvSectionRepository;
+
     public ApiResponse<CVDTO> createCV(CVCreateRequest request) {
         try {
             User user = userRepository.findById(request.getUserId())
@@ -40,7 +43,23 @@ public class CVService {
                             .orElseThrow(() -> new RuntimeException("Template not found")))
                     .build();
 
+            // Lưu CV trước để lấy cvId
             cv = cvRepository.save(cv);
+
+            // Nếu có sections thì lưu các section
+            if (request.getSections() != null && !request.getSections().isEmpty()) {
+                int order = 0;
+                for (com.example.firehire_ai.dto.request.CVSectionRequest sectionReq : request.getSections()) {
+                    CVSection section = CVSection.builder()
+                            .cv(cv)
+                            .sectionType(parseSectionType(sectionReq.getSectionType()))
+                            .content(sectionReq.getContent())
+                            .displayOrder(sectionReq.getDisplayOrder() != null ? sectionReq.getDisplayOrder() : order++)
+                            .build();
+                    cv.getSections().add(section);
+                }
+                cv = cvRepository.save(cv);
+            }
 
             return ApiResponse.success("CV created successfully", CVDTO.fromEntity(cv));
         } catch (Exception e) {
@@ -48,15 +67,35 @@ public class CVService {
         }
     }
 
+    // Helper method để parse section type
+    private CVSection.SectionType parseSectionType(String type) {
+        if (type == null)
+            return CVSection.SectionType.profile;
+        try {
+            return CVSection.SectionType.valueOf(type.toLowerCase());
+        } catch (Exception e) {
+            return CVSection.SectionType.profile;
+        }
+    }
+
     public ApiResponse<List<CVDTO>> getMyCVs(Integer userId) {
         try {
-            List<CV> cvs = cvRepository.findByUser_Id(userId);
+            // Sử dụng query với eager fetch để tránh lazy loading issues
+            List<CV> cvs = cvRepository.findByUserIdWithDetails(userId);
+
+            if (cvs.isEmpty()) {
+                return ApiResponse.success("No CVs found for user", cvs.stream()
+                        .map(CVDTO::fromEntity)
+                        .collect(Collectors.toList()));
+            }
+
             List<CVDTO> cvDTOs = cvs.stream()
                     .map(CVDTO::fromEntity)
                     .collect(Collectors.toList());
 
-            return ApiResponse.success(cvDTOs);
+            return ApiResponse.success("CVs retrieved successfully", cvDTOs);
         } catch (Exception e) {
+            e.printStackTrace(); // Log the full stack trace
             return ApiResponse.error("Failed to retrieve CVs: " + e.getMessage());
         }
     }

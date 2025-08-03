@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug 401 Response</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin: 5px; }
+        input, textarea { margin: 10px; padding: 10px; width: 300px; }
+        #log { background: #f5f5f5; padding: 10px; height: 400px; overflow-y: auto; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Debug 401 Response</h1>
+    
+    <div class="section">
+        <h3>Test CV Upload with Detailed Response Debug</h3>
+        <input type="number" id="userId" value="19" placeholder="User ID">
+        <input type="number" id="jobId" value="1" placeholder="Job ID">
+        <input type="file" id="cvFile" accept=".pdf,.doc,.docx">
+        <textarea id="coverLetter" placeholder="Cover letter...">Optional cover letter...</textarea>
+        <br>
+        <button onclick="testUploadWithDetailedDebug()">Upload with Full Debug</button>
+        <button onclick="testBackendAuthentication()">Test Backend Authentication</button>
+    </div>
+
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="log"></div>
+        <button onclick="clearLog()">Clear</button>
+    </div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<span class="${className}">[${new Date().toLocaleTimeString()}] ${msg}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function testBackendAuthentication() {
+            log('Testing backend authentication requirements...', 'info');
+            
+            // Test different endpoints to see which require auth
+            const endpoints = [
+                '/api/applications',
+                '/api/jobs', 
+                '/api/users',
+                '/api/applications/apply-with-cv'
+            ];
+
+            for (let endpoint of endpoints) {
+                try {
+                    const response = await fetch(`http://localhost:8080${endpoint}`);
+                    log(`${endpoint}: Status ${response.status}`, response.ok ? 'success' : 'error');
+                } catch (error) {
+                    log(`${endpoint}: Error - ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function testUploadWithDetailedDebug() {
+            const userId = document.getElementById('userId').value;
+            const jobId = document.getElementById('jobId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+
+            log('=== STARTING DETAILED CV UPLOAD DEBUG ===', 'info');
+            log(`User ID: ${userId}`, 'info');
+            log(`Job ID: ${jobId}`, 'info');
+            log(`File: ${cvFile ? cvFile.name : 'No file selected'}`, 'info');
+
+            if (!cvFile) {
+                log('ERROR: No file selected', 'error');
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            formData.append('coverLetter', coverLetter);
+
+            // Log FormData contents
+            log('FormData contents:', 'info');
+            for (let [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`, 'info');
+                } else {
+                    log(`  ${key}: ${value}`, 'info');
+                }
+            }
+
+            try {
+                log('Sending request to: http://localhost:8080/api/applications/apply-with-cv', 'info');
+                
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(`Response ok: ${response.ok}`, 'info');
+                log(`Response type: ${response.type}`, 'info');
+                log(`Response url: ${response.url}`, 'info');
+
+                // Log all response headers
+                log('Response headers:', 'info');
+                for (let [key, value] of response.headers.entries()) {
+                    log(`  ${key}: ${value}`, 'info');
+                }
+
+                // Get response as text first to see what we actually receive
+                const responseText = await response.text();
+                log(`Raw response body: "${responseText}"`, 'info');
+                log(`Response body length: ${responseText.length}`, 'info');
+                log(`Response body type: ${typeof responseText}`, 'info');
+
+                // Try to parse as JSON
+                if (responseText.trim()) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        log('Parsed JSON:', 'success');
+                        log(JSON.stringify(data, null, 2), 'success');
+                    } catch (jsonError) {
+                        log(`JSON parse error: ${jsonError.message}`, 'error');
+                        log('This suggests the response is not valid JSON', 'error');
+                        
+                        // Check if it's HTML (common for Spring Boot error pages)
+                        if (responseText.toLowerCase().includes('<html>')) {
+                            log('Response appears to be HTML (error page)', 'error');
+                        }
+                    }
+                } else {
+                    log('Response body is empty', 'error');
+                }
+
+                // Additional analysis for 401 errors
+                if (response.status === 401) {
+                    log('=== 401 UNAUTHORIZED ANALYSIS ===', 'error');
+                    log('This typically means:', 'error');
+                    log('1. Authentication is required for this endpoint', 'error');
+                    log('2. The endpoint expects a valid JWT token or session', 'error');
+                    log('3. Security configuration is blocking the request', 'error');
+                    log('4. CORS is not configured properly', 'error');
+                }
+
+            } catch (error) {
+                log(`Network error: ${error.message}`, 'error');
+                log(`Error type: ${error.constructor.name}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+            }
+        }
+
+        // Auto-load
+        window.onload = function() {
+            log('Debug tool loaded. Ready for testing.', 'info');
+        };
+    </script>
+</body>
+</html>

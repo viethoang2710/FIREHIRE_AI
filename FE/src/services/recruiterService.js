@@ -174,10 +174,17 @@ const getRecruiterJobs = async () => {
         createdAt: job.createdDate,
         industry: job.industry,
         experienceLevel: job.experienceLevel,
-        employerId: job.employerId
+        employerId: job.employerId,
+        companyLogo: job.companyLogo // Thêm logo vào frontend mapping
       }));
       
       console.log(`Đã lấy thành công ${frontendJobs.length} tin tuyển dụng từ database`);
+      console.log('DEBUG: Jobs từ API có logo:', frontendJobs.map(job => ({
+        id: job.id,
+        title: job.title,
+        hasLogo: !!job.companyLogo,
+        logoLength: job.companyLogo ? job.companyLogo.length : 0
+      })));
       
       // Sync với persistent storage
       const syncedJobs = await persistentStorage.syncJobsWithDatabase(currentUserId, frontendJobs);
@@ -300,11 +307,66 @@ const getRecruiterJobs = async () => {
 };
 
 /**
+ * Upload logo công ty
+ * @param {File} logoFile - File logo cần upload
+ * @returns {String} URL của logo đã upload
+ */
+const uploadCompanyLogo = async (logoFile) => {
+  try {
+    const formData = new FormData();
+    formData.append('logo', logoFile);
+    
+    const response = await axios.post(`${API_URL}/upload/company-logo`, formData, {
+      headers: {
+        ...getAuthHeader().headers,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    if (response.data && response.data.success) {
+      return response.data.data.url; // Trả về URL của logo
+    } else {
+      throw new Error('Upload logo thất bại');
+    }
+  } catch (error) {
+    console.error('Error uploading company logo:', error);
+    // Fallback: convert file to base64 để lưu tạm thời
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(logoFile);
+    });
+  }
+};
+
+/**
  * Đăng tin tuyển dụng mới
  * @param {Object} jobData - Dữ liệu tin tuyển dụng
  */
 const createJob = async (jobData) => {
   try {
+    // Xử lý logo nếu có
+    let logoData = null;
+    if (jobData.companyLogo && jobData.companyLogo instanceof File) {
+      try {
+        // Convert file to base64
+        logoData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(jobData.companyLogo);
+        });
+        console.log('Logo converted to base64 successfully, length:', logoData.length);
+      } catch (logoError) {
+        console.warn('Logo conversion failed, continuing without logo:', logoError);
+      }
+    } else if (typeof jobData.companyLogo === 'string') {
+      // Nếu đã là string (base64), sử dụng trực tiếp
+      logoData = jobData.companyLogo;
+      console.log('Using existing logo data, length:', logoData.length);
+    }
+    
     // Lấy employerId từ nhiều nguồn với fallback logic như trong RecruiterDashboardPage
     let employerId = parseInt(localStorage.getItem('current_employer_id')) || 
                      parseInt(localStorage.getItem('user_id')) || 
@@ -340,10 +402,13 @@ const createJob = async (jobData) => {
       skillsRequired: jobDataToSubmit.requirements || "",
       benefits: jobDataToSubmit.benefits || "",
       companyName: jobDataToSubmit.companyName || "",
+      companyLogo: logoData, // Gửi logo base64 trực tiếp
       status: jobDataToSubmit.status
     };
     
     console.log('Đang đăng tin tuyển dụng mới lên API:', apiJobData);
+    console.log('Logo data được gửi:', logoData ? `${logoData.substring(0, 50)}... (length: ${logoData.length})` : 'null');
+    console.log('Company Logo trong apiJobData:', apiJobData.companyLogo ? `${apiJobData.companyLogo.substring(0, 50)}... (length: ${apiJobData.companyLogo.length})` : 'null');
     let response;
     try {
       // Sử dụng endpoint recruiter/jobs thay vì jobs trực tiếp
@@ -401,7 +466,8 @@ const createJob = async (jobData) => {
       publishedAt: savedJob.createdDate,
       createdAt: savedJob.createdDate,
       industry: savedJob.industry,
-      experienceLevel: savedJob.experienceLevel
+      experienceLevel: savedJob.experienceLevel,
+      companyLogo: savedJob.companyLogo // Thêm logo vào response
     };
 
     // Cập nhật localStorage để UI hiển thị ngay lập tức (cache)
@@ -470,6 +536,24 @@ const createJob = async (jobData) => {
  */
 const updateJob = async (jobId, jobData) => {
   try {
+    // Xử lý logo mới nếu có
+    let logoData = jobData.companyLogo;
+    if (jobData.companyLogo && jobData.companyLogo instanceof File) {
+      try {
+        // Convert file to base64
+        logoData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(jobData.companyLogo);
+        });
+        console.log('New logo converted to base64 successfully, length:', logoData.length);
+      } catch (logoError) {
+        console.warn('Logo conversion failed, keeping existing logo:', logoError);
+        // Giữ logo cũ nếu conversion thất bại
+      }
+    }
+    
     // Lấy user ID hiện tại để tạo key lưu trữ riêng
     const currentUserId = localStorage.getItem('current_employer_id');
     const storageKey = currentUserId ? `recruiterJobs_${currentUserId}` : 'recruiterJobs';
@@ -487,11 +571,14 @@ const updateJob = async (jobId, jobData) => {
       skillsRequired: jobData.requirements || jobData.skillsRequired,
       benefits: jobData.benefits,
       companyName: jobData.companyName || "",
+      companyLogo: logoData, // Gửi logo base64 trực tiếp
       status: jobData.status === "Đang hiển thị" ? "ACTIVE" : jobData.status
     };
     
     console.log(`Gửi request cập nhật tin tuyển dụng ID: ${jobId}`, apiJobData);
-    const response = await axios.put(`${API_URL}/jobs/${jobId}`, apiJobData, getAuthHeader());
+    console.log('Logo data được gửi trong update:', logoData ? `${logoData.substring(0, 50)}... (length: ${logoData.length})` : 'null');
+    console.log('Company Logo trong apiJobData update:', apiJobData.companyLogo ? `${apiJobData.companyLogo.substring(0, 50)}... (length: ${apiJobData.companyLogo.length})` : 'null');
+    const response = await axios.put(`${API_URL}/recruiter/jobs/${jobId}`, apiJobData, getAuthHeader());
     
     // Kiểm tra xem phản hồi có phải là HTML không (đăng nhập hoặc lỗi)
     if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
@@ -525,7 +612,8 @@ const updateJob = async (jobId, jobData) => {
       benefits: savedJob.benefits,
       updatedAt: savedJob.updatedDate || new Date().toISOString(),
       industry: savedJob.industry,
-      experienceLevel: savedJob.experienceLevel
+      experienceLevel: savedJob.experienceLevel,
+      companyLogo: savedJob.companyLogo // Thêm logo vào response sau khi update
     };
     
     // Cập nhật localStorage sau khi cập nhật tin tuyển dụng
@@ -770,7 +858,8 @@ const recruiterService = {
   getJobDetails,
   getApplicants,
   updateApplicantStatus,
-  downloadCV
+  downloadCV,
+  uploadCompanyLogo
 };
 
 export default recruiterService;

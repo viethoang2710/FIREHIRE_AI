@@ -28,14 +28,16 @@ public class SecurityConfig {
                     return config;
                 }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/**").permitAll()
-                        .requestMatchers("/admin/**").permitAll() // Allow admin endpoints for testing
+                        .requestMatchers("/api/auth/**").permitAll() // Login, register
+                        .requestMatchers("/api/applications/apply-with-cv").permitAll() // CV upload endpoint
+                        .requestMatchers("/api/jobs/*/apply").permitAll() // Job apply endpoint
+                        .requestMatchers("/api/jobs/**").permitAll() // Job listings (public access)
+                        .requestMatchers("/admin/**").permitAll() // Admin endpoints
                         .requestMatchers("/employer/**").hasRole("EMPLOYER")
                         .requestMatchers("/candidate/**").hasRole("CANDIDATE")
-                        .anyRequest().authenticated())
-                .formLogin(Customizer.withDefaults())
-                .httpBasic(Customizer.withDefaults());
+                        .anyRequest().permitAll()) // Allow other endpoints for now
+                .formLogin(form -> form.disable()) // Disable form login for API
+                .httpBasic(basic -> basic.disable()); // Disable HTTP Basic for API
 
         return http.build();
     }

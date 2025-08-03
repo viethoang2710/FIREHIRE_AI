@@ -52,23 +52,126 @@ export const jobService = {
     }
   },
 
-  getJobsByLocation: async (locationSlug, params = {}) => {
+  getJobsByLocation: async (locationVariations, params = {}) => {
     try {
-      console.log('Fetching jobs by location:', locationSlug);
-      const response = await api.get(`/api/jobs/location`, { 
-        params: { location: locationSlug, ...params } 
-      });
+      console.log('Fetching jobs by location variations:', locationVariations);
       
-      console.log('Location jobs response:', response.data);
+      // Skip API location endpoint, go directly to get all jobs and filter locally
+      // This ensures we get all jobs from database and filter them properly
+      console.log('Getting all jobs from database and filtering locally...');
       
-      // Xử lý dữ liệu trả về từ API với cấu trúc ApiResponse<List<JobPostingDTO>>
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        return response.data.data;
+      try {
+        const allJobsResponse = await api.get('/api/jobs', { params });
+        
+        console.log('All jobs response:', allJobsResponse.data);
+        
+        if (allJobsResponse.data && allJobsResponse.data.success && Array.isArray(allJobsResponse.data.data)) {
+          console.log(`Total jobs in database: ${allJobsResponse.data.data.length}`);
+          
+          // Log all job locations for debugging
+          console.log('All job locations in database:');
+          allJobsResponse.data.data.forEach((job, index) => {
+            console.log(`  ${index + 1}. "${job.title}" - Location: "${job.location}"`);
+          });
+          
+          // Filter jobs by location variations with better matching logic
+          const filteredJobs = allJobsResponse.data.data.filter(job => {
+            if (!job.location) {
+              console.log(`Job "${job.title}" has no location`);
+              return false;
+            }
+            
+            const hasMatch = locationVariations.some(loc => {
+              const jobLocation = job.location.toLowerCase().trim();
+              const searchLocation = loc.toLowerCase().trim();
+              
+              // Multiple matching strategies
+              const exactMatch = jobLocation === searchLocation;
+              const containsMatch = jobLocation.includes(searchLocation) || searchLocation.includes(jobLocation);
+              
+              // Special handling for Ho Chi Minh variations
+              const isHCMVariation = (
+                (jobLocation.includes('hồ chí minh') || jobLocation.includes('ho chi minh') || 
+                 jobLocation.includes('hcm') || jobLocation.includes('tphcm') || 
+                 jobLocation.includes('saigon')) &&
+                (searchLocation.includes('hồ chí minh') || searchLocation.includes('ho chi minh') || 
+                 searchLocation.includes('hcm') || searchLocation.includes('tphcm') || 
+                 searchLocation.includes('saigon'))
+              );
+              
+              const match = exactMatch || containsMatch || isHCMVariation;
+              
+              if (match) {
+                console.log(`✓ MATCH: "${job.location}" matches "${loc}" (exact: ${exactMatch}, contains: ${containsMatch}, hcm: ${isHCMVariation})`);
+              } else {
+                console.log(`✗ NO MATCH: "${job.location}" vs "${loc}"`);
+              }
+              return match;
+            });
+            
+            return hasMatch;
+          });
+          
+          console.log(`Filtered result: ${filteredJobs.length} jobs match location variations:`, locationVariations);
+          filteredJobs.forEach(job => {
+            console.log(`  - "${job.title}" at "${job.location}"`);
+          });
+          
+          if (filteredJobs.length > 0) {
+            console.log(`Found ${filteredJobs.length} jobs matching location variations`);
+            return filteredJobs;
+          } else {
+            console.log('No jobs found matching location variations, returning empty array');
+            return [];
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch and filter all jobs:', err);
       }
       
+      // If all else fails, return empty array
+      console.log('Returning empty array as fallback');
       return [];
     } catch (error) {
       console.error('Error fetching jobs by location:', error);
+      
+      // Fallback trong môi trường development với mock data
+      if (process.env.NODE_ENV === 'development') {
+        console.log('API error - using mock data for location filtering');
+        const mockJobs = require('../data/mockData').featuredJobsData;
+        
+        // Filter mock jobs by location if locationVariations provided
+        if (Array.isArray(locationVariations)) {
+          const filteredMockJobs = mockJobs.filter(job => {
+            if (!job.location) return false;
+            
+            // Check if job location matches any of the location variations
+            return locationVariations.some(loc => {
+              const jobLocation = job.location.toLowerCase();
+              const searchLocation = loc.toLowerCase();
+              
+              // Exact match or contains match
+              return jobLocation === searchLocation || 
+                     jobLocation.includes(searchLocation) ||
+                     searchLocation.includes(jobLocation);
+            });
+          });
+          
+          console.log(`Filtered ${filteredMockJobs.length} jobs from ${mockJobs.length} total for location variations:`, locationVariations);
+          return filteredMockJobs;
+        } else if (typeof locationVariations === 'string') {
+          const filteredMockJobs = mockJobs.filter(job => {
+            if (!job.location) return false;
+            const jobLocation = job.location.toLowerCase();
+            const searchLocation = locationVariations.toLowerCase();
+            return jobLocation.includes(searchLocation) || searchLocation.includes(jobLocation);
+          });
+          return filteredMockJobs;
+        }
+        
+        return mockJobs;
+      }
+      
       throw error.response?.data || { message: 'Failed to fetch jobs by location' };
     }
   },

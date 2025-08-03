@@ -20,6 +20,12 @@ public class ApplicationController {
     @Autowired
     private ApplicationService applicationService;
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ApplicationDTO>>> getAllApplications() {
+        ApiResponse<List<ApplicationDTO>> response = applicationService.getAllApplications();
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<ApplicationDTO>> createApplication(
             @Valid @RequestBody ApplicationRequest request) {
@@ -118,6 +124,23 @@ public class ApplicationController {
     @PostMapping("/{applicationId}/interview")
     public ResponseEntity<ApiResponse<ApplicationDTO>> scheduleInterview(@PathVariable Integer applicationId) {
         return ResponseEntity.ok(applicationService.updateApplicationStatus(applicationId, "INTERVIEW_SCHEDULED"));
+    }
+
+    @GetMapping("/cv/{cvId}/download")
+    public ResponseEntity<byte[]> downloadCV(@PathVariable Integer cvId) {
+        try {
+            ApiResponse<byte[]> response = applicationService.downloadCVFile(cvId);
+            if (response.isSuccess()) {
+                return ResponseEntity.ok()
+                        .header("Content-Type", "application/octet-stream")
+                        .header("Content-Disposition", "attachment; filename=\"cv.pdf\"")
+                        .body(response.getData());
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     private boolean isValidCVFileType(String contentType) {

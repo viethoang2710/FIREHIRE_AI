@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug CV Upload Error - Simple</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .error { background: #fee; border: 1px solid #fcc; padding: 10px; border-radius: 4px; color: #c33; margin: 10px 0; }
+        .success { background: #efe; border: 1px solid #cfc; padding: 10px; border-radius: 4px; color: #3c3; margin: 10px 0; }
+        .info { background: #eef; border: 1px solid #ccf; padding: 10px; border-radius: 4px; color: #33c; margin: 10px 0; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .logs { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Simple CV Upload Debug</h1>
+        
+        <div id="status" class="info">Checking system status...</div>
+        
+        <h2>Step 1: Backend Check</h2>
+        <button onclick="checkBackend()">Check Backend Status</button>
+        <div id="backend-result"></div>
+        
+        <h2>Step 2: Test CV Upload</h2>
+        <form id="uploadForm">
+            <label>Job ID:</label>
+            <input type="number" id="jobId" value="4001" required>
+            
+            <label>User ID:</label>
+            <input type="number" id="userId" value="1002" required>
+            
+            <label>CV File:</label>
+            <input type="file" id="cvFile" accept=".pdf,.doc,.docx,.txt" required>
+            
+            <label>Cover Letter:</label>
+            <textarea id="coverLetter" rows="3" placeholder="Optional cover letter..."></textarea>
+            
+            <button type="submit">Upload CV</button>
+        </form>
+        
+        <div id="upload-result"></div>
+        
+        <h2>Debug Logs</h2>
+        <div id="logs" class="logs"></div>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <h2>Quick Tests</h2>
+        <button onclick="testJobs()">Test Jobs API</button>
+        <button onclick="testApplications()">Test Applications API</button>
+        <button onclick="testUserAuth()">Test User Auth</button>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').textContent = '';
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = type;
+            element.innerHTML = message;
+        }
+
+        async function checkBackend() {
+            log('Checking backend...');
+            showResult('backend-result', 'Checking...', 'info');
+            
+            try {
+                // Test basic endpoint
+                const response = await fetch('http://localhost:8080/api/jobs', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('backend-result', `✅ Backend OK! Found ${data.data ? data.data.length : 0} jobs`, 'success');
+                    log(`Backend working. Jobs: ${data.data ? data.data.length : 0}`, 'success');
+                    return true;
+                } else {
+                    showResult('backend-result', `❌ Backend error: ${response.status}`, 'error');
+                    log(`Backend error: ${response.status} ${response.statusText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                showResult('backend-result', `❌ Backend not accessible: ${error.message}`, 'error');
+                log(`Backend connection failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testJobs() {
+            log('Testing Jobs API...');
+            try {
+                const response = await fetch('http://localhost:8080/api/jobs');
+                const data = await response.json();
+                log(`Jobs API: Success=${data.success}, Count=${data.data ? data.data.length : 0}`, 'success');
+                
+                // Show first job details if available
+                if (data.data && data.data.length > 0) {
+                    const firstJob = data.data[0];
+                    log(`First job: ID=${firstJob.id}, Title="${firstJob.title}"`, 'info');
+                }
+            } catch (error) {
+                log(`Jobs API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testApplications() {
+            log('Testing Applications API...');
+            try {
+                const response = await fetch('http://localhost:8080/api/applications');
+                const data = await response.json();
+                log(`Applications API: Success=${data.success}, Count=${data.data ? data.data.length : 0}`, 'success');
+            } catch (error) {
+                log(`Applications API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserAuth() {
+            log('Testing User Authentication...');
+            // Simulate current user data (you may need to adjust this based on your auth system)
+            const mockUser = { id: 1002, fullName: 'Test User', email: 'test@example.com' };
+            log(`Mock user: ${JSON.stringify(mockUser)}`, 'info');
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/users/${mockUser.id}`);
+                if (response.ok) {
+                    const userData = await response.json();
+                    log(`User data retrieved successfully`, 'success');
+                } else {
+                    log(`User not found or API not available`, 'error');
+                }
+            } catch (error) {
+                log(`User API test failed: ${error.message}`, 'error');
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            log('Starting CV upload...');
+            showResult('upload-result', 'Uploading...', 'info');
+            
+            const jobId = document.getElementById('jobId').value;
+            const userId = document.getElementById('userId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+            
+            // Validation
+            if (!cvFile) {
+                showResult('upload-result', '❌ Please select a CV file', 'error');
+                log('No file selected', 'error');
+                return;
+            }
+            
+            log(`File info: ${cvFile.name}, Size: ${cvFile.size} bytes, Type: ${cvFile.type}`, 'info');
+            
+            // Create FormData
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            if (coverLetter) {
+                formData.append('coverLetter', coverLetter);
+            }
+            
+            log(`Uploading to: http://localhost:8080/api/applications/apply-with-cv`, 'info');
+            log(`Parameters: jobId=${jobId}, candidateId=${userId}, fileName=${cvFile.name}`, 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`, 'info');
+                
+                const responseText = await response.text();
+                log(`Raw response: ${responseText}`, 'info');
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Invalid JSON response: ${responseText}`);
+                }
+                
+                if (result.success) {
+                    showResult('upload-result', `✅ CV Upload Success! Message: ${result.message}`, 'success');
+                    log('CV upload successful!', 'success');
+                    log(`Application details: ${JSON.stringify(result.data)}`, 'info');
+                } else {
+                    showResult('upload-result', `❌ Upload Failed: ${result.message}`, 'error');
+                    log(`Upload failed: ${result.message}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult('upload-result', `❌ Network Error: ${error.message}`, 'error');
+                log(`Upload error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        });
+
+        // Auto-check on page load
+        window.addEventListener('load', function() {
+            log('Page loaded, checking backend...');
+            checkBackend();
+        });
+    </script>
+</body>
+</html>

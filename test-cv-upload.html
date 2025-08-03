@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test CV Upload API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input, .form-group textarea { width: 300px; padding: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+    <h1>Test CV Upload to Database</h1>
+    
+    <form id="cvUploadForm">
+        <div class="form-group">
+            <label>Job ID:</label>
+            <input type="number" id="jobId" value="4001" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Candidate ID (User ID):</label>
+            <input type="number" id="candidateId" value="1002" required>
+        </div>
+        
+        <div class="form-group">
+            <label>CV File:</label>
+            <input type="file" id="cvFile" accept=".pdf,.doc,.docx" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Cover Letter:</label>
+            <textarea id="coverLetter" rows="4" placeholder="Optional cover letter..."></textarea>
+        </div>
+        
+        <button type="submit">Upload CV to Database</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;"></div>
+    
+    <h2>Test API Endpoints</h2>
+    <button onclick="testGetApplicationsByCandidate()">Get Applications by Candidate</button>
+    <button onclick="testGetAllCVs()">Get All CVs</button>
+    
+    <script>
+        document.getElementById('cvUploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('jobId', document.getElementById('jobId').value);
+            formData.append('candidateId', document.getElementById('candidateId').value);
+            formData.append('cvFile', document.getElementById('cvFile').files[0]);
+            formData.append('coverLetter', document.getElementById('coverLetter').value);
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = `
+                    <h3>Response:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+                
+                if (result.success) {
+                    alert('CV uploaded successfully to database!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+                alert('Network error: ' + error.message);
+            }
+        });
+        
+        async function testGetApplicationsByCandidate() {
+            try {
+                const response = await fetch('http://localhost:8080/api/applications/candidate/1002');
+                const result = await response.json();
+                
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = `
+                    <h3>Applications by Candidate 1002:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function testGetAllCVs() {
+            try {
+                const response = await fetch('http://localhost:8080/api/cvs');
+                const result = await response.json();
+                
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = `
+                    <h3>All CVs in Database:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,29 +1,63 @@
 // src/components/JobCard.js
-import React, { useState, useRef } from 'react';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
+import ApplyJobModal from './UI/ApplyJobModal';
 
-const JobCard = ({ job }) => {
+const JobCard = ({ job, showAlert }) => {
+  const { currentUser } = useContext(AuthContext);
   const [showFullDesc, setShowFullDesc] = useState(false);
-  const fileInputRef = useRef(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   const handleApplyClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      console.log(`Nộp CV cho job ${job?.title}:`, file.name);
-      // TODO: Gửi file lên server tại đây
-      e.target.value = ''; // reset input để chọn lại sau
+    if (!currentUser) {
+      showAlert('Vui lòng đăng nhập để nộp CV ứng tuyển', 'warning');
+      return;
     }
+
+    // Kiểm tra role - chỉ CANDIDATE mới được nộp CV
+    if (currentUser.role !== 'CANDIDATE') {
+      showAlert('Chỉ ứng viên mới có thể nộp CV ứng tuyển', 'warning');
+      return;
+    }
+
+    setShowApplyModal(true);
   };
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4 border border-gray-200 hover:shadow-md transition-shadow">
-      <h2 className="text-xl font-semibold text-blue-700 mb-1">{job?.title || 'Tiêu đề công việc'}</h2>
-      <p className="text-gray-600 mb-1">{job?.companyName || job?.company || 'Tên công ty'}</p>
-      <p className="text-gray-500 text-sm mb-2">{job?.location || 'Địa điểm'}</p>
-      <p className="text-green-600 font-bold mb-3">{job?.salary || 'Mức lương'}</p>
+      {/* Header với logo và thông tin cơ bản */}
+      <div className="flex items-start space-x-4 mb-3">
+        {/* Logo công ty */}
+        <div className="flex-shrink-0">
+          {job?.companyLogo ? (
+            <img 
+              src={job.companyLogo} 
+              alt={`${job?.companyName || job?.company || 'Company'} logo`}
+              className="w-12 h-12 object-cover border border-gray-200 rounded-lg"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          {/* Fallback nếu không có logo */}
+          <div 
+            className={`w-12 h-12 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center ${job?.companyLogo ? 'hidden' : 'flex'}`}
+          >
+            <span className="text-gray-400 text-xs font-medium">
+              {(job?.companyName || job?.company || 'C').charAt(0).toUpperCase()}
+            </span>
+          </div>
+        </div>
+        
+        {/* Thông tin chính */}
+        <div className="flex-grow">
+          <h2 className="text-xl font-semibold text-blue-700 mb-1">{job?.title || 'Tiêu đề công việc'}</h2>
+          <p className="text-gray-600 mb-1 font-medium">{job?.companyName || job?.company || 'Tên công ty'}</p>
+          <p className="text-gray-500 text-sm mb-2">{job?.location || 'Địa điểm'}</p>
+          <p className="text-green-600 font-bold">{job?.salary || 'Mức lương'}</p>
+        </div>
+      </div>
       
       {/* Experience Level và Job Type */}
       <div className="flex gap-4 mb-3">
@@ -101,13 +135,12 @@ const JobCard = ({ job }) => {
         Nộp CV
       </button>
 
-      {/* Input ẩn chọn file */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".pdf,.doc,.docx"
-        className="hidden"
-        onChange={handleFileChange}
+      {/* Apply Job Modal */}
+      <ApplyJobModal
+        isOpen={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        job={job}
+        showAlert={showAlert}
       />
     </div>
   );

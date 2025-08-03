@@ -65,7 +65,7 @@ const HomePage = ({ showAlert }) => {
   return (
     <main className="flex-grow container mx-auto px-4 py-8">
       <HeroSection />
-      <FeaturedJobs />
+      <FeaturedJobs showAlert={showAlert} />
       <AIFilterSection showAlert={showAlert} />
       <TopCompanies />
       <PopularCategories />

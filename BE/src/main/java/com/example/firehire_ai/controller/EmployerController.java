@@ -2,7 +2,9 @@ package com.example.firehire_ai.controller;
 
 import com.example.firehire_ai.dto.request.EmployerProfileRequest;
 import com.example.firehire_ai.dto.response.ApiResponse;
+import com.example.firehire_ai.dto.response.ApplicationDTO;
 import com.example.firehire_ai.dto.response.EmployerDTO;
+import com.example.firehire_ai.service.ApplicationService;
 import com.example.firehire_ai.service.EmployerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class EmployerController {
 
     @Autowired
     private EmployerService employerService;
+
+    @Autowired
+    private ApplicationService applicationService;
 
     @PostMapping("/profile")
     public ResponseEntity<ApiResponse<EmployerDTO>> createOrUpdateProfile(
@@ -64,5 +69,11 @@ public class EmployerController {
         } else {
             return ResponseEntity.badRequest().body(response);
         }
+    }
+
+    @GetMapping("/job/{jobId}/applications")
+    public ResponseEntity<ApiResponse<List<ApplicationDTO>>> getApplicationsByJobId(@PathVariable Integer jobId) {
+        ApiResponse<List<ApplicationDTO>> response = applicationService.getApplicationsByJobId(jobId);
+        return ResponseEntity.ok(response);
     }
 }

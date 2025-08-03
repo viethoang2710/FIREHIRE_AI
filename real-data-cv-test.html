@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Upload Debug - Real Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .error { background: #fee; border: 1px solid #fcc; padding: 10px; border-radius: 4px; color: #c33; margin: 10px 0; }
+        .success { background: #efe; border: 1px solid #cfc; padding: 10px; border-radius: 4px; color: #3c3; margin: 10px 0; }
+        .info { background: #eef; border: 1px solid #ccf; padding: 10px; border-radius: 4px; color: #33c; margin: 10px 0; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; color: #856404; margin: 10px 0; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .logs { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        input, textarea, select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .data-list { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; }
+        .data-item { padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .data-item:hover { background: #e9ecef; }
+        .data-item.selected { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 CV Upload Debug - Real Database Data</h1>
+        
+        <div id="status" class="info">Loading database information...</div>
+        
+        <h2>Step 1: Load Available Data</h2>
+        <button onclick="loadDatabaseData()">Load Users & Jobs from Database</button>
+        <div id="data-result"></div>
+        
+        <h2>Step 2: Select Test Data</h2>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <h3>Available Users</h3>
+                <div id="users-list" class="data-list">Click "Load Database Data" first</div>
+                <input type="hidden" id="selectedUserId">
+            </div>
+            <div style="flex: 1;">
+                <h3>Available Jobs</h3>
+                <div id="jobs-list" class="data-list">Click "Load Database Data" first</div>
+                <input type="hidden" id="selectedJobId">
+            </div>
+        </div>
+        
+        <h2>Step 3: Test CV Upload</h2>
+        <form id="uploadForm">
+            <label>Selected User ID:</label>
+            <input type="number" id="displayUserId" readonly>
+            
+            <label>Selected Job ID:</label>
+            <input type="number" id="displayJobId" readonly>
+            
+            <label>CV File:</label>
+            <input type="file" id="cvFile" accept=".pdf,.doc,.docx,.txt" required>
+            
+            <label>Cover Letter:</label>
+            <textarea id="coverLetter" rows="3" placeholder="Optional cover letter..."></textarea>
+            
+            <button type="submit">Upload CV with Real Data</button>
+        </form>
+        
+        <div id="upload-result"></div>
+        
+        <h2>Debug Logs</h2>
+        <div id="logs" class="logs"></div>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <script>
+        let users = [];
+        let jobs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').textContent = '';
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = type;
+            element.innerHTML = message;
+        }
+
+        async function loadDatabaseData() {
+            log('Loading users and jobs from database...');
+            showResult('data-result', 'Loading...', 'info');
+            
+            try {
+                // Load users
+                const usersResponse = await fetch('http://localhost:8080/api/users');
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    if (usersData.success && usersData.data) {
+                        users = usersData.data;
+                        log(`Loaded ${users.length} users from database`, 'success');
+                        displayUsers();
+                    } else {
+                        log('Users API returned no data', 'warning');
+                    }
+                } else {
+                    log(`Users API failed: ${usersResponse.status}`, 'error');
+                }
+                
+                // Load jobs
+                const jobsResponse = await fetch('http://localhost:8080/api/jobs');
+                if (jobsResponse.ok) {
+                    const jobsData = await jobsResponse.json();
+                    if (jobsData.success && jobsData.data) {
+                        jobs = jobsData.data;
+                        log(`Loaded ${jobs.length} jobs from database`, 'success');
+                        displayJobs();
+                    } else {
+                        log('Jobs API returned no data', 'warning');
+                    }
+                } else {
+                    log(`Jobs API failed: ${jobsResponse.status}`, 'error');
+                }
+                
+                if (users.length > 0 && jobs.length > 0) {
+                    showResult('data-result', `✅ Loaded ${users.length} users and ${jobs.length} jobs from database`, 'success');
+                } else {
+                    showResult('data-result', '⚠️ Some data could not be loaded', 'warning');
+                }
+                
+            } catch (error) {
+                log(`Error loading database data: ${error.message}`, 'error');
+                showResult('data-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayUsers() {
+            const usersList = document.getElementById('users-list');
+            usersList.innerHTML = '';
+            
+            users.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'data-item';
+                userItem.innerHTML = `<strong>ID: ${user.id}</strong><br>${user.fullName}<br><small>${user.email} (${user.role})</small>`;
+                userItem.onclick = () => selectUser(user);
+                usersList.appendChild(userItem);
+            });
+        }
+
+        function displayJobs() {
+            const jobsList = document.getElementById('jobs-list');
+            jobsList.innerHTML = '';
+            
+            jobs.forEach(job => {
+                const jobItem = document.createElement('div');
+                jobItem.className = 'data-item';
+                jobItem.innerHTML = `<strong>ID: ${job.id}</strong><br>${job.title}<br><small>${job.companyName} - ${job.location}</small>`;
+                jobItem.onclick = () => selectJob(job);
+                jobsList.appendChild(jobItem);
+            });
+        }
+
+        function selectUser(user) {
+            // Remove previous selection
+            document.querySelectorAll('#users-list .data-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to clicked item
+            event.target.closest('.data-item').classList.add('selected');
+            
+            document.getElementById('selectedUserId').value = user.id;
+            document.getElementById('displayUserId').value = user.id;
+            
+            log(`Selected user: ${user.fullName} (ID: ${user.id})`, 'info');
+        }
+
+        function selectJob(job) {
+            // Remove previous selection
+            document.querySelectorAll('#jobs-list .data-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to clicked item
+            event.target.closest('.data-item').classList.add('selected');
+            
+            document.getElementById('selectedJobId').value = job.id;
+            document.getElementById('displayJobId').value = job.id;
+            
+            log(`Selected job: ${job.title} (ID: ${job.id})`, 'info');
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('selectedUserId').value;
+            const jobId = document.getElementById('selectedJobId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+            
+            if (!userId || !jobId) {
+                showResult('upload-result', '❌ Please select both a user and a job first', 'error');
+                log('Missing user or job selection', 'error');
+                return;
+            }
+            
+            if (!cvFile) {
+                showResult('upload-result', '❌ Please select a CV file', 'error');
+                log('No file selected', 'error');
+                return;
+            }
+            
+            log('Starting CV upload with real database data...');
+            log(`User ID: ${userId}, Job ID: ${jobId}, File: ${cvFile.name}`, 'info');
+            showResult('upload-result', 'Uploading...', 'info');
+            
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            if (coverLetter) {
+                formData.append('coverLetter', coverLetter);
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`, 'info');
+                
+                const responseText = await response.text();
+                log(`Raw response: ${responseText}`, 'info');
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Invalid JSON response: ${responseText}`);
+                }
+                
+                if (result.success) {
+                    showResult('upload-result', `✅ CV Upload Successful!<br>Message: ${result.message}<br>Application ID: ${result.data?.applicationId}`, 'success');
+                    log('CV upload successful!', 'success');
+                    log(`Application details: ${JSON.stringify(result.data)}`, 'info');
+                } else {
+                    showResult('upload-result', `❌ Upload Failed: ${result.message}`, 'error');
+                    log(`Upload failed: ${result.message}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult('upload-result', `❌ Network Error: ${error.message}`, 'error');
+                log(`Upload error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        });
+
+        // Auto-load on page load
+        window.addEventListener('load', function() {
+            log('Page loaded, loading database data...');
+            loadDatabaseData();
+        });
+    </script>
+</body>
+</html>

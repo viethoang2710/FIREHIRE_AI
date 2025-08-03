@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 CV API Test Tool</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin: 16px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .status { padding: 12px; border-radius: 8px; margin: 12px 0; font-weight: 500; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { 
+            background: #667eea; color: white; border: none; padding: 12px 24px; 
+            border-radius: 8px; cursor: pointer; margin: 8px; font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover { background: #5a67d8; }
+        button:disabled { background: #a0aec0; cursor: not-allowed; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        pre { background: #f8f9fa; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+        .endpoint { font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; }
+        .step { display: flex; align-items: center; margin: 12px 0; }
+        .step-number { 
+            background: #667eea; color: white; width: 24px; height: 24px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; margin-right: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 FireHire AI - CV Database Test Tool</h1>
+            <p>Test kết nối Backend và Database để hiển thị CV từ bảng CVs</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🚀 Backend Status</h2>
+                <div id="backend-status"></div>
+                <button onclick="checkBackend()" id="check-backend-btn">Kiểm tra Backend</button>
+                <button onclick="startBackend()" style="background: #28a745;">Khởi động Backend</button>
+            </div>
+
+            <div class="card">
+                <h2>📊 Database Test</h2>
+                <div id="database-status"></div>
+                <button onclick="testDatabase()" id="test-db-btn">Test Database Connection</button>
+                <button onclick="testCVAPI()" id="test-cv-btn">Test CV API</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔍 CV API Tests</h2>
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>Test Primary Endpoint:</strong>
+                    <div class="endpoint">GET /api/cv/user/19</div>
+                    <button onclick="testEndpoint('/api/cv/user/19')">Test</button>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>Test Health Check:</strong>
+                    <div class="endpoint">GET /actuator/health</div>
+                    <button onclick="testEndpoint('/actuator/health')">Test</button>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>Test Alternative Endpoints:</strong>
+                    <button onclick="testAlternativeEndpoints()">Test All</button>
+                </div>
+            </div>
+            <div id="api-results"></div>
+        </div>
+
+        <div class="card">
+            <h2>📋 Expected Database Data</h2>
+            <div class="info">
+                <strong>Dữ liệu mong đợi từ bảng CVs (User ID 19):</strong>
+                <ul>
+                    <li>CVID: 1 - "CV for Kỹ sư dữ liệu (Junior Data Engineer)"</li>
+                    <li>CVID: 2 - "CV for Chuyên viên hỗ trợ kỹ thuật (IT Helpdesk)"</li>
+                </ul>
+            </div>
+            <button onclick="showExpectedData()">Show Expected JSON</button>
+            <div id="expected-data"></div>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ Troubleshooting Guide</h2>
+            <div id="troubleshooting">
+                <div class="warning">
+                    <strong>Nếu backend chưa chạy:</strong>
+                    <ol>
+                        <li>Chạy file: <code>quick-start-backend.bat</code></li>
+                        <li>Hoặc mở Terminal và chạy:</li>
+                        <ul>
+                            <li><code>cd "C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE"</code></li>
+                            <li><code>mvnw.cmd spring-boot:run</code></li>
+                        </ul>
+                        <li>Đợi thông báo "Started FireHireAiApplication"</li>
+                        <li>Backend sẽ chạy tại: http://localhost:8080</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8080';
+        
+        async function checkBackend() {
+            const statusDiv = document.getElementById('backend-status');
+            const btn = document.getElementById('check-backend-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Đang kiểm tra...';
+            
+            try {
+                const response = await fetch(BASE_URL + '/actuator/health', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Backend đang chạy!<br>
+                            Status: ${data.status || 'UP'}<br>
+                            URL: ${BASE_URL}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Backend KHÔNG chạy<br>
+                        Error: ${error.message}<br>
+                        Hãy khởi động backend trước!
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Kiểm tra Backend';
+            }
+        }
+        
+        async function testCVAPI() {
+            const statusDiv = document.getElementById('database-status');
+            const btn = document.getElementById('test-cv-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Đang test...';
+            
+            try {
+                const response = await fetch(BASE_URL + '/api/cv/user/19', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                console.log('CV API Response:', data);
+                
+                if (response.ok) {
+                    const cvData = data.success ? data.data : (Array.isArray(data) ? data : []);
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ CV API hoạt động!<br>
+                            Found: ${cvData ? cvData.length : 0} CVs<br>
+                            Response type: ${data.success ? 'ApiResponse' : 'Array'}
+                        </div>
+                        <details>
+                            <summary>View Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        ❌ CV API lỗi<br>
+                        Error: ${error.message}<br>
+                        Check backend logs!
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test CV API';
+            }
+        }
+        
+        async function testEndpoint(endpoint) {
+            const resultsDiv = document.getElementById('api-results');
+            const url = BASE_URL + endpoint;
+            
+            resultsDiv.innerHTML += `<div class="info">🔄 Testing: ${endpoint}</div>`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                resultsDiv.innerHTML += `
+                    <div class="${response.ok ? 'success' : 'error'}">
+                        <strong>${endpoint}</strong><br>
+                        Status: ${response.status} ${response.statusText}<br>
+                        <details>
+                            <summary>Response Data</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <strong>${endpoint}</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function startBackend() {
+            alert('Hãy mở Command Prompt và chạy:\n\ncd "C:\\Users\\NGUYENNHUPHUC\\OneDrive\\Documents\\FIREHIRE_AI"\nquick-start-backend.bat\n\nHoặc chạy file quick-start-backend.bat trực tiếp!');
+        }
+        
+        function showExpectedData() {
+            const expectedDiv = document.getElementById('expected-data');
+            const expected = {
+                success: true,
+                message: "CVs retrieved successfully",
+                data: [
+                    {
+                        cvId: 1,
+                        userId: 19,
+                        title: "CV for Kỹ sư dữ liệu (Junior Data Engineer)",
+                        fileName: "CV_DataEngineer.pdf",
+                        fileSize: 1258291,
+                        createdAt: "2025-08-02T04:18:10",
+                        job: null,
+                        skillTags: []
+                    },
+                    {
+                        cvId: 2,
+                        userId: 19,
+                        title: "CV for Chuyên viên hỗ trợ kỹ thuật (IT Helpdesk)",
+                        fileName: "CV_ITHelpdesk.pdf",
+                        fileSize: 1154048,
+                        createdAt: "2025-08-02T22:02:30",
+                        job: null,
+                        skillTags: []
+                    }
+                ]
+            };
+            
+            expectedDiv.innerHTML = `
+                <div class="info">
+                    <strong>Expected JSON Response:</strong>
+                    <pre>${JSON.stringify(expected, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        // Auto-check backend on load
+        window.onload = function() {
+            checkBackend();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Image Upload Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Final Image Upload Test</h1>
+    
+    <div class="section info">
+        <h3>Step 1: Force Database Fix</h3>
+        <button onclick="forceDatabaseFix()">🔨 Force Fix Database</button>
+        <div id="dbResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 2: Test Image Upload</h3>
+        <div>
+            <label>User ID: <input type="number" id="userId" value="19"></label><br><br>
+            <label>Image: <input type="file" id="imageFile" accept="image/*"></label><br><br>
+            <button onclick="testUpload()">📤 Test Upload</button>
+        </div>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 3: Verify Image</h3>
+        <button onclick="verifyImage()">👁️ Check Image</button>
+        <div id="verifyResult"></div>
+    </div>
+
+    <script>
+        async function forceDatabaseFix() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.innerHTML = '⏳ Forcing database fix...';
+            
+            try {
+                const response = await fetch('/api/admin/fix-profile-picture-column', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Database Fixed!<pre>${JSON.stringify(result, null, 2)}</pre></div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Fix failed: ${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testUpload() {
+            const resultDiv = document.getElementById('uploadResult');
+            const userId = document.getElementById('userId').value;
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                resultDiv.innerHTML = '<div class="error">❌ Please select an image file</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = `⏳ Uploading ${file.name} (${(file.size/1024).toFixed(1)} KB) for user ${userId}...`;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`/api/profile/${userId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Upload successful!<pre>${result}</pre></div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Upload failed:<pre>${result}</pre></div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function verifyImage() {
+            const resultDiv = document.getElementById('verifyResult');
+            const userId = document.getElementById('userId').value;
+            
+            resultDiv.innerHTML = '⏳ Checking image...';
+            
+            try {
+                // Check if image exists
+                const imageResponse = await fetch(`/api/profile/${userId}/image`);
+                
+                if (imageResponse.ok) {
+                    const blob = await imageResponse.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Image found! Size: ${(blob.size/1024).toFixed(1)} KB
+                            <br><br>
+                            <img src="${imageUrl}" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd;">
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ No image found for user ${userId}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

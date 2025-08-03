@@ -26,6 +26,15 @@ public class CVDTO {
     private List<CVSectionDTO> sections;
     private List<String> skillTags;
 
+    // File information
+    private String fileName;
+    private Long fileSize;
+    private String fileType;
+    private String coverLetter;
+
+    // Job information
+    private JobPostingDTO job;
+
     public static CVDTO fromEntity(CV cv) {
         if (cv == null)
             return null;
@@ -49,6 +58,11 @@ public class CVDTO {
                 .updatedAt(cv.getUpdatedAt())
                 .sections(sectionDTOs)
                 .skillTags(skillTagNames)
+                .fileName(cv.getFileName())
+                .fileSize(cv.getFileSize())
+                .fileType(cv.getFileType())
+                .coverLetter(cv.getCoverLetter())
+                .job(cv.getJob() != null ? JobPostingDTO.fromEntity(cv.getJob()) : null)
                 .build();
     }
 }

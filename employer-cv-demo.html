@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏢 Demo Nhà Tuyển Dụng - Xem CV theo Job ID</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 16px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 8px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .endpoint {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+        .job-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+            background: #f8fafc;
+        }
+        .job-card:hover {
+            background: #f1f5f9;
+            cursor: pointer;
+        }
+        .cv-list {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .cv-item {
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        .cv-item:last-child {
+            border-bottom: none;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-reviewed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-accepted {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Demo Nhà Tuyển Dụng</h1>
+            <p>Chức năng xem CV ứng tuyển theo Job ID</p>
+        </div>
+
+        <div class="grid">
+            <!-- Backend Status -->
+            <div class="card">
+                <h2>🚀 Backend Status</h2>
+                <div id="backend-status"></div>
+                <button onclick="checkBackend()" id="check-backend-btn">Kiểm tra Backend</button>
+                <button onclick="startBackend()" style="background: #28a745;">Khởi động Backend</button>
+            </div>
+
+            <!-- Job Management Demo -->
+            <div class="card">
+                <h2>📋 Job Management Demo</h2>
+                <div id="job-management-demo"></div>
+                <button onclick="loadJobsDemo()">Tải Demo Jobs</button>
+                <button onclick="showJobManagementPage()">Mở Job Management</button>
+            </div>
+        </div>
+
+        <!-- Test CV API by Job ID -->
+        <div class="card">
+            <h2>🔍 Test API: Lấy CV theo Job ID</h2>
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>Test Endpoint:</strong>
+                    <div class="endpoint">GET /api/applications/job/{jobId}</div>
+                    <div style="margin-top: 8px;">
+                        <input type="number" id="jobIdInput" placeholder="Nhập Job ID (ví dụ: 1)" value="1" 
+                               style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 8px;">
+                        <button onclick="testGetCVsByJobId()">Test API</button>
+                    </div>
+                </div>
+            </div>
+            <div id="cv-api-results"></div>
+        </div>
+
+        <!-- Demo Jobs List -->
+        <div class="card">
+            <h2>💼 Demo: Danh sách công việc</h2>
+            <p>Click vào công việc để xem CV ứng tuyển</p>
+            <div id="jobs-list"></div>
+        </div>
+
+        <!-- CV Applications Display -->
+        <div class="card" id="cv-applications-card" style="display: none;">
+            <h2>📄 CV ứng tuyển</h2>
+            <div id="selected-job-info"></div>
+            <div id="cv-applications-list"></div>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="card">
+            <h2>⚙️ Hướng dẫn Setup</h2>
+            <div class="warning">
+                <strong>Để test đầy đủ chức năng:</strong>
+                <ol>
+                    <li>Khởi động Backend: <code>quick-start-backend.bat</code></li>
+                    <li>Tạo dữ liệu test trong database (CV và Applications)</li>
+                    <li>Khởi động Frontend: <code>cd FE && npm start</code></li>
+                    <li>Truy cập: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8080';
+
+        // Mock data for demo
+        const mockJobs = [
+            {
+                id: 1,
+                title: "Kỹ sư dữ liệu (Junior Data Engineer)",
+                companyName: "Tech Solutions Vietnam",
+                location: "Hà Nội",
+                salary: "15-25 triệu VNĐ",
+                applicationsCount: 3
+            },
+            {
+                id: 2,
+                title: "Frontend Developer (React)",
+                companyName: "Tech Solutions Vietnam", 
+                location: "TP.HCM",
+                salary: "18-30 triệu VNĐ",
+                applicationsCount: 7
+            },
+            {
+                id: 3,
+                title: "Marketing Specialist",
+                companyName: "Tech Solutions Vietnam",
+                location: "Đà Nẵng", 
+                salary: "12-20 triệu VNĐ",
+                applicationsCount: 12
+            }
+        ];
+
+        const mockApplications = {
+            1: [
+                {
+                    applicationId: 1,
+                    cvId: 1,
+                    cvTitle: "CV for Kỹ sư dữ liệu (Junior Data Engineer)",
+                    candidateName: "Nguyễn Như Phúc",
+                    candidateEmail: "phuc.nguyen@example.com",
+                    candidatePhone: "0123456789",
+                    appliedAt: "2025-08-02T04:18:10",
+                    status: "PENDING"
+                },
+                {
+                    applicationId: 2,
+                    cvId: 2,
+                    cvTitle: "CV for Data Analyst Position",
+                    candidateName: "Lê Thị Mai",
+                    candidateEmail: "mai.le@example.com",
+                    candidatePhone: "0987654321",
+                    appliedAt: "2025-08-02T22:02:30",
+                    status: "REVIEWED"
+                },
+                {
+                    applicationId: 3,
+                    cvId: 3,
+                    cvTitle: "CV for Junior Data Engineer",
+                    candidateName: "Trần Văn Đạt",
+                    candidateEmail: "dat.tran@example.com",
+                    candidatePhone: "0912345678",
+                    appliedAt: "2025-08-03T10:15:20",
+                    status: "PENDING"
+                }
+            ],
+            2: [
+                {
+                    applicationId: 4,
+                    cvId: 4,
+                    cvTitle: "Frontend Developer CV",
+                    candidateName: "Phạm Thị Lan",
+                    candidateEmail: "lan.pham@example.com",
+                    candidatePhone: "0934567890",
+                    appliedAt: "2025-08-01T14:30:00",
+                    status: "ACCEPTED"
+                }
+            ]
+        };
+
+        async function checkBackend() {
+            const statusDiv = document.getElementById('backend-status');
+            const btn = document.getElementById('check-backend-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Đang kiểm tra...';
+            
+            try {
+                const response = await fetch(BASE_URL + '/actuator/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Backend đang hoạt động!<br>
+                            Status: ${data.status}<br>
+                            URL: ${BASE_URL}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Backend không hoạt động<br>
+                        Error: ${error.message}<br>
+                        Hãy khởi động backend trước!
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Kiểm tra Backend';
+            }
+        }
+
+        function startBackend() {
+            alert('Mở Terminal và chạy:\\n\\ncd "C:\\\\Users\\\\NGUYENNHUPHUC\\\\OneDrive\\\\Documents\\\\FIREHIRE_AI"\\nquick-start-backend.bat');
+        }
+
+        function loadJobsDemo() {
+            const jobsList = document.getElementById('jobs-list');
+            
+            jobsList.innerHTML = mockJobs.map(job => `
+                <div class="job-card" onclick="selectJob(${job.id})">
+                    <h3 style="margin: 0 0 8px 0; color: #2563eb;">${job.title}</h3>
+                    <p style="margin: 0 0 4px 0; color: #6b7280;">📍 ${job.location} | 💰 ${job.salary}</p>
+                    <p style="margin: 0; color: #059669; font-weight: 500;">
+                        👥 ${job.applicationsCount} CV ứng tuyển
+                    </p>
+                </div>
+            `).join('');
+
+            document.getElementById('job-management-demo').innerHTML = `
+                <div class="success">
+                    ✅ Đã tải ${mockJobs.length} công việc demo<br>
+                    Click vào công việc để xem CV ứng tuyển
+                </div>
+            `;
+        }
+
+        function selectJob(jobId) {
+            const job = mockJobs.find(j => j.id === jobId);
+            const applications = mockApplications[jobId] || [];
+            
+            document.getElementById('selected-job-info').innerHTML = `
+                <h3>🎯 ${job.title}</h3>
+                <p>📍 ${job.location} | 💰 ${job.salary}</p>
+                <p>👥 Có ${applications.length} CV ứng tuyển</p>
+            `;
+
+            const cvList = applications.map(app => `
+                <div class="cv-item">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 4px 0;">${app.candidateName}</h4>
+                        <p style="margin: 0 0 2px 0; color: #6b7280;">${app.cvTitle}</p>
+                        <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                            📧 ${app.candidateEmail} | 📞 ${app.candidatePhone}
+                        </p>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">
+                            Nộp: ${new Date(app.appliedAt).toLocaleString('vi-VN')}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="status-badge status-${app.status.toLowerCase()}">
+                            ${getStatusText(app.status)}
+                        </span>
+                        <div style="margin-top: 8px;">
+                            <button onclick="viewCV(${app.cvId})" style="margin: 0 4px 0 0; padding: 4px 8px; font-size: 12px;">👁️ Xem</button>
+                            <button onclick="downloadCV(${app.cvId})" style="margin: 0; padding: 4px 8px; font-size: 12px;">📥 Tải</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('cv-applications-list').innerHTML = `
+                <div class="cv-list">
+                    ${cvList || '<p style="padding: 16px; text-align: center; color: #6b7280;">Chưa có CV nào ứng tuyển</p>'}
+                </div>
+            `;
+
+            document.getElementById('cv-applications-card').style.display = 'block';
+            document.getElementById('cv-applications-card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'PENDING': return 'Chờ xem xét';
+                case 'REVIEWED': return 'Đã xem xét';
+                case 'ACCEPTED': return 'Chấp nhận';
+                case 'REJECTED': return 'Từ chối';
+                default: return status;
+            }
+        }
+
+        function viewCV(cvId) {
+            alert(`Xem CV ID: ${cvId}\\nTrong thực tế sẽ mở modal hoặc trang mới để xem CV`);
+        }
+
+        function downloadCV(cvId) {
+            alert(`Tải CV ID: ${cvId}\\nTrong thực tế sẽ gọi API: GET /api/cv/${cvId}/download`);
+        }
+
+        async function testGetCVsByJobId() {
+            const jobId = document.getElementById('jobIdInput').value;
+            const resultsDiv = document.getElementById('cv-api-results');
+            
+            if (!jobId) {
+                resultsDiv.innerHTML = '<div class="error">Vui lòng nhập Job ID</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="info">🔄 Đang test API...</div>';
+
+            try {
+                // Test real API first
+                const response = await fetch(`${BASE_URL}/api/applications/job/${jobId}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            ✅ API hoạt động!<br>
+                            Endpoint: GET /api/applications/job/${jobId}<br>
+                            Kết quả: ${data.success ? data.data.length : 0} applications
+                        </div>
+                        <details>
+                            <summary>View Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                // Fall back to mock data
+                const mockData = mockApplications[jobId] || [];
+                resultsDiv.innerHTML = `
+                    <div class="warning">
+                        ⚠️ API không khả dụng - Hiển thị mock data<br>
+                        Endpoint: GET /api/applications/job/${jobId}<br>
+                        Mock result: ${mockData.length} applications<br>
+                        Error: ${error.message}
+                    </div>
+                    <details>
+                        <summary>View Mock Data</summary>
+                        <pre>${JSON.stringify({
+                            success: true,
+                            message: "Applications retrieved successfully (mock)",
+                            data: mockData
+                        }, null, 2)}</pre>
+                    </details>
+                `;
+            }
+        }
+
+        function showJobManagementPage() {
+            alert('Trong thực tế sẽ chuyển đến trang Job Management:\\n\\nhttp://localhost:3000/job-management\\n\\nHoặc sử dụng navigate("jobManagement") trong React app');
+        }
+
+        // Auto-load demo on page load
+        window.onload = function() {
+            checkBackend();
+            loadJobsDemo();
+        };
+    </script>
+</body>
+</html>

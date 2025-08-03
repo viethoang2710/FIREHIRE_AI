@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin: 5px; }
+        input { margin: 10px; padding: 10px; width: 300px; display: block; }
+        #log { background: #f5f5f5; padding: 10px; height: 400px; overflow-y: auto; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Database Debug Tool</h1>
+    
+    <div class="section">
+        <h3>Check Users in Database</h3>
+        <button onclick="getAllUsers()">Get All Users</button>
+        <button onclick="checkSpecificUser()">Check Specific User</button>
+        <input type="email" id="checkEmail" placeholder="Email to check" value="nhuphuc31@gmail.com">
+    </div>
+
+    <div class="section">
+        <h3>Manual Login Test</h3>
+        <input type="email" id="loginEmail" placeholder="Email" value="nhuphuc31@gmail.com">
+        <input type="password" id="loginPassword" placeholder="Password" value="testpass123">
+        <button onclick="manualLogin()">Manual Login Test</button>
+    </div>
+
+    <div class="section">
+        <h3>Password Debug</h3>
+        <input type="text" id="rawPassword" placeholder="Raw password" value="testpass123">
+        <button onclick="checkPasswordEncoding()">Check Password Encoding</button>
+    </div>
+
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="log"></div>
+        <button onclick="clearLog()">Clear</button>
+    </div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<span class="${className}">[${new Date().toLocaleTimeString()}] ${msg}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function getAllUsers() {
+            log('🔍 Fetching all users from database...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/users');
+                if (response.ok) {
+                    const users = await response.json();
+                    log('✅ Found ' + users.length + ' users:', 'success');
+                    
+                    users.forEach(user => {
+                        log(`👤 ID: ${user.id}, Email: ${user.email}, Role: ${user.role}, Name: ${user.fullName}`, 'info');
+                    });
+                } else {
+                    log('❌ Failed to get users: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('❌ Error fetching users: ' + error.message, 'error');
+            }
+        }
+
+        async function checkSpecificUser() {
+            const email = document.getElementById('checkEmail').value;
+            log('🔍 Checking user: ' + email, 'info');
+            
+            try {
+                // Try to login to see detailed error
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: email, 
+                        password: 'wrongpassword' // Use wrong password to see error details
+                    })
+                });
+
+                const responseText = await response.text();
+                if (response.status === 401) {
+                    log('✅ User exists in database (got 401 unauthorized)', 'success');
+                    log('📧 Response: ' + responseText, 'info');
+                } else {
+                    log('❌ Unexpected response: ' + response.status + ' - ' + responseText, 'error');
+                }
+            } catch (error) {
+                log('❌ Error checking user: ' + error.message, 'error');
+            }
+        }
+
+        async function manualLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            log('🔐 Manual login test:', 'info');
+            log('📧 Email: ' + email, 'info');
+            log('🔑 Password: ' + password, 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const responseText = await response.text();
+                log('📡 Response Status: ' + response.status, 'info');
+                log('📄 Response Body: ' + responseText, 'info');
+
+                if (response.ok) {
+                    log('🎉 LOGIN SUCCESS!', 'success');
+                    try {
+                        const data = JSON.parse(responseText);
+                        log('👤 User ID: ' + data.userId, 'success');
+                        log('🎭 Role: ' + data.role, 'success');
+                        log('🔑 Token: ' + (data.token ? 'Present' : 'Missing'), 'success');
+                    } catch (e) {
+                        log('⚠️ Response is not JSON', 'warning');
+                    }
+                } else {
+                    log('❌ LOGIN FAILED', 'error');
+                }
+            } catch (error) {
+                log('❌ Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function checkPasswordEncoding() {
+            const rawPassword = document.getElementById('rawPassword').value;
+            log('🔐 Testing password encoding for: ' + rawPassword, 'info');
+            
+            // This is just to show what we're testing - actual encoding happens on server
+            log('📝 Raw password length: ' + rawPassword.length, 'info');
+            log('📝 Raw password: "' + rawPassword + '"', 'info');
+            
+            // Test with a real login attempt
+            await manualLogin();
+        }
+
+        // Auto-load
+        window.onload = function() {
+            log('🚀 Database debug tool loaded.', 'info');
+            log('🔧 Click "Get All Users" to see database content', 'info');
+        };
+    </script>
+</body>
+</html>

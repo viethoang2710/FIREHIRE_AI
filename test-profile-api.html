@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Profile API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Profile API</h1>
+        
+        <div class="test-section">
+            <h3>1. Test Get Full Profile</h3>
+            <button onclick="testGetProfile()">Get Profile (User ID: 1)</button>
+            <div id="getProfileResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Update Profile</h3>
+            <button onclick="testUpdateProfile()">Update Profile</button>
+            <div id="updateProfileResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test Create New Profile</h3>
+            <button onclick="testCreateProfile()">Create Profile</button>
+            <div id="createProfileResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/profile';
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testGetProfile() {
+            const result = await makeRequest(`${API_BASE}/1/full`);
+            displayResult('getProfileResult', result);
+        }
+
+        async function testUpdateProfile() {
+            const profileData = {
+                title: "Senior Frontend Developer",
+                bio: "Experienced developer with passion for React and Node.js",
+                skills: "React, Node.js, TypeScript, Python",
+                experience: "5 years",
+                phoneNumber: "0123456789",
+                address: "Ho Chi Minh City, Vietnam",
+                linkedinUrl: "https://linkedin.com/in/test",
+                githubUrl: "https://github.com/test",
+                websiteUrl: "https://test.dev",
+                workPreference: "FULL_TIME",
+                salaryExpectation: "20-30 million VND"
+            };
+
+            const result = await makeRequest(`${API_BASE}/1`, {
+                method: 'POST',
+                body: JSON.stringify(profileData)
+            });
+            displayResult('updateProfileResult', result);
+        }
+
+        async function testCreateProfile() {
+            const profileData = {
+                title: "New Developer",
+                bio: "Just starting my career",
+                skills: "HTML, CSS, JavaScript",
+                experience: "1 year",
+                workPreference: "PART_TIME"
+            };
+
+            const result = await makeRequest(`${API_BASE}/2`, {
+                method: 'POST',
+                body: JSON.stringify(profileData)
+            });
+            displayResult('createProfileResult', result);
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            const className = result.success ? 'success' : 'error';
+            
+            element.innerHTML = `
+                <div class="${className}">
+                    <strong>Status:</strong> ${result.success ? 'SUCCESS' : 'ERROR'}<br>
+                    <strong>HTTP Status:</strong> ${result.status || 'N/A'}<br>
+                    <pre>${JSON.stringify(result.data || result.error, null, 2)}</pre>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

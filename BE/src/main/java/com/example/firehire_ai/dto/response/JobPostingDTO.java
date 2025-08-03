@@ -17,6 +17,7 @@ public class JobPostingDTO {
     private Integer jobId; // Keep for backward compatibility
     private Integer employerId;
     private String companyName;
+    private String companyLogo;
     private String title;
     private String description;
     private String location;
@@ -54,6 +55,7 @@ public class JobPostingDTO {
                 .jobId(jobPosting.getId()) // For backward compatibility
                 .employerId(jobPosting.getEmployerId())
                 .companyName(companyName)
+                .companyLogo(jobPosting.getCompanyLogo())
                 .title(jobPosting.getTitle())
                 .description(jobPosting.getDescription())
                 .location(jobPosting.getLocation())

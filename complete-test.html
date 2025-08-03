@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Function Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin: 5px; }
+        input, textarea { margin: 10px; padding: 10px; width: 300px; display: block; }
+        #log { background: #f5f5f5; padding: 10px; height: 500px; overflow-y: auto; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        .warning { color: orange; }
+        .test-summary { background: #e9ecef; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Complete Function Test - Login & CV Upload</h1>
+    
+    <div class="section">
+        <h3>🔐 Test Login Function</h3>
+        <input type="email" id="loginEmail" placeholder="Email" value="phucnn1@gmail.com">
+        <input type="password" id="loginPassword" placeholder="Password" value="password123">
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="createTestUser()">Create Test User</button>
+    </div>
+
+    <div class="section">
+        <h3>📄 Test CV Upload Function</h3>
+        <input type="number" id="userId" placeholder="User ID" value="19">
+        <input type="number" id="jobId" placeholder="Job ID" value="1">
+        <input type="file" id="cvFile" accept=".pdf,.doc,.docx,.txt">
+        <textarea id="coverLetter" placeholder="Cover letter...">Test CV upload after login fix</textarea>
+        <button onclick="createTestFile()">Create Test File</button>
+        <button onclick="testCVUpload()">Test CV Upload</button>
+    </div>
+
+    <div class="section">
+        <h3>🔄 Combined Test</h3>
+        <button onclick="runCompleteTest()">Run Complete Test (Login + CV Upload)</button>
+        <button onclick="checkBackendStatus()">Check Backend Status</button>
+    </div>
+
+    <div class="section">
+        <h3>📊 Test Results Summary</h3>
+        <div id="summary" class="test-summary">
+            <div id="loginStatus">🔐 Login: Not tested</div>
+            <div id="cvUploadStatus">📄 CV Upload: Not tested</div>
+            <div id="overallStatus">🎯 Overall: Not tested</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="log"></div>
+        <button onclick="clearLog()">Clear</button>
+    </div>
+
+    <script>
+        let loginToken = null;
+        let testResults = {
+            login: null,
+            cvUpload: null
+        };
+
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logDiv.innerHTML += `<span class="${className}">[${new Date().toLocaleTimeString()}] ${msg}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateSummary() {
+            const loginStatusDiv = document.getElementById('loginStatus');
+            const cvUploadStatusDiv = document.getElementById('cvUploadStatus');
+            const overallStatusDiv = document.getElementById('overallStatus');
+
+            // Update login status
+            if (testResults.login === true) {
+                loginStatusDiv.innerHTML = '🔐 Login: ✅ WORKING';
+                loginStatusDiv.style.color = 'green';
+            } else if (testResults.login === false) {
+                loginStatusDiv.innerHTML = '🔐 Login: ❌ FAILED';
+                loginStatusDiv.style.color = 'red';
+            }
+
+            // Update CV upload status
+            if (testResults.cvUpload === true) {
+                cvUploadStatusDiv.innerHTML = '📄 CV Upload: ✅ WORKING';
+                cvUploadStatusDiv.style.color = 'green';
+            } else if (testResults.cvUpload === false) {
+                cvUploadStatusDiv.innerHTML = '📄 CV Upload: ❌ FAILED';
+                cvUploadStatusDiv.style.color = 'red';
+            }
+
+            // Update overall status
+            if (testResults.login === true && testResults.cvUpload === true) {
+                overallStatusDiv.innerHTML = '🎯 Overall: ✅ ALL FUNCTIONS WORKING!';
+                overallStatusDiv.style.color = 'green';
+                overallStatusDiv.style.fontWeight = 'bold';
+            } else if (testResults.login === false || testResults.cvUpload === false) {
+                overallStatusDiv.innerHTML = '🎯 Overall: ❌ Some functions failed';
+                overallStatusDiv.style.color = 'red';
+            }
+        }
+
+        async function checkBackendStatus() {
+            log('🔍 Checking backend status...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/users');
+                if (response.ok) {
+                    log('✅ Backend is running and responding', 'success');
+                    return true;
+                } else {
+                    log('❌ Backend responding with error: ' + response.status, 'error');
+                    return false;
+                }
+            } catch (error) {
+                log('❌ Backend connection error: ' + error.message, 'error');
+                log('🔧 Please start backend: mvnw.cmd spring-boot:run', 'warning');
+                return false;
+            }
+        }
+
+        async function createTestUser() {
+            log('🔧 Creating test user for login...', 'info');
+            
+            const registerData = {
+                fullName: "Login Test User",
+                email: "logintest@example.com",
+                password: "testpass123",
+                phoneNumber: "1234567890"
+            };
+
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/register/candidate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(registerData)
+                });
+
+                if (response.ok) {
+                    log('✅ Test user created successfully', 'success');
+                    document.getElementById('loginEmail').value = 'logintest@example.com';
+                    document.getElementById('loginPassword').value = 'testpass123';
+                    log('📧 Credentials auto-filled for testing', 'info');
+                } else {
+                    const responseText = await response.text();
+                    log('❌ Failed to create test user: ' + responseText, 'error');
+                }
+            } catch (error) {
+                log('❌ Error creating test user: ' + error.message, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            log('🔐 === TESTING LOGIN ===', 'info');
+            log(`📧 Email: ${email}`, 'info');
+
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    loginToken = data.token;
+                    testResults.login = true;
+                    log('🎉 LOGIN SUCCESS!', 'success');
+                    log(`👤 User: ${data.fullName} (${data.role})`, 'success');
+                    log(`🔑 Token: ${data.token ? 'Received' : 'Missing'}`, data.token ? 'success' : 'warning');
+                    
+                    // Auto-fill user ID if available
+                    if (data.userId) {
+                        document.getElementById('userId').value = data.userId;
+                        log(`🔢 User ID auto-filled: ${data.userId}`, 'info');
+                    }
+                } else {
+                    testResults.login = false;
+                    const responseText = await response.text();
+                    log('❌ LOGIN FAILED: ' + responseText, 'error');
+                }
+            } catch (error) {
+                testResults.login = false;
+                log('❌ Login network error: ' + error.message, 'error');
+            }
+
+            updateSummary();
+        }
+
+        function createTestFile() {
+            const content = "Test CV Content\n\nName: Test User\nPosition: Software Developer\nExperience: 3 years\n\nThis is a test CV file for upload testing.";
+            const blob = new Blob([content], { type: 'text/plain' });
+            const file = new File([blob], 'test-cv.txt', { type: 'text/plain' });
+            
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('cvFile').files = dt.files;
+            
+            log('📄 Test CV file created: test-cv.txt (' + file.size + ' bytes)', 'success');
+        }
+
+        async function testCVUpload() {
+            const userId = document.getElementById('userId').value;
+            const jobId = document.getElementById('jobId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+
+            log('📄 === TESTING CV UPLOAD ===', 'info');
+
+            if (!cvFile) {
+                log('❌ No CV file selected. Please create or select a file.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            formData.append('coverLetter', coverLetter);
+
+            try {
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    testResults.cvUpload = true;
+                    log('🎉 CV UPLOAD SUCCESS!', 'success');
+                    const responseText = await response.text();
+                    log('📄 Upload response: ' + responseText, 'success');
+                } else {
+                    testResults.cvUpload = false;
+                    const responseText = await response.text();
+                    log('❌ CV UPLOAD FAILED: ' + responseText, 'error');
+                }
+            } catch (error) {
+                testResults.cvUpload = false;
+                log('❌ CV upload network error: ' + error.message, 'error');
+            }
+
+            updateSummary();
+        }
+
+        async function runCompleteTest() {
+            log('🎯 === RUNNING COMPLETE FUNCTION TEST ===', 'info');
+            
+            // Reset results
+            testResults = { login: null, cvUpload: null };
+            updateSummary();
+
+            // Check backend first
+            const backendOk = await checkBackendStatus();
+            if (!backendOk) {
+                log('❌ Backend not available. Cannot run tests.', 'error');
+                return;
+            }
+
+            // Test login
+            await testLogin();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+
+            // Test CV upload
+            if (!document.getElementById('cvFile').files[0]) {
+                createTestFile();
+            }
+            await testCVUpload();
+
+            // Final summary
+            log('🏁 === TEST COMPLETE ===', 'info');
+            if (testResults.login && testResults.cvUpload) {
+                log('🎉 SUCCESS! Both login and CV upload are working!', 'success');
+            } else {
+                log('❌ Some functions failed. Check individual test results.', 'error');
+            }
+        }
+
+        // Auto-load
+        window.onload = function() {
+            log('🚀 Complete function test page loaded.', 'info');
+            log('🔧 Click "Check Backend Status" first, then "Run Complete Test"', 'info');
+        };
+    </script>
+</body>
+</html>

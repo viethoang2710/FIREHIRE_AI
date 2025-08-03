@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CV API - Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; border: 1px solid #ff9999; }
+        .success { background: #e6ffe6; border: 1px solid #99ff99; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .status { margin-bottom: 20px; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 FireHire AI - CV API Debug Tool</h1>
+    
+    <div id="backend-status" class="status"></div>
+    
+    <h2>Backend Tests:</h2>
+    <button onclick="testBackendStatus()">Kiểm tra Backend Status</button>
+    <button onclick="testAPI('/api/cv/user/19')">Test /api/cv/user/19</button>
+    <button onclick="testAPI('/api/cvs/user/19')">Test Alternative Endpoint</button>
+    
+    <h2>Mock Data:</h2>
+    <button onclick="showMockData()">Hiển thị Mock CV Data</button>
+    <button onclick="testProfilePageLogic()">Test ProfilePage Logic</button>
+    
+    <h2>Backend Setup:</h2>
+    <div class="result warning">
+        <h3>Khởi động Backend:</h3>
+        <ol>
+            <li>Mở Command Prompt hoặc PowerShell</li>
+            <li>Chạy: <code>cd "c:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI"</code></li>
+            <li>Chạy: <code>start-backend-manual.bat</code></li>
+            <li>Hoặc thủ công: <code>cd BE && mvnw.cmd spring-boot:run</code></li>
+            <li>Đợi thông báo "Started FireHireAiApplication"</li>
+            <li>Backend sẽ chạy ở http://localhost:8080</li>
+        </ol>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const baseURL = 'http://localhost:8080';
+        
+        async function testBackendStatus() {
+            const statusDiv = document.getElementById('backend-status');
+            statusDiv.innerHTML = '<p>Đang kiểm tra backend...</p>';
+            
+            try {
+                const response = await fetch(baseURL + '/actuator/health');
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="success">✅ Backend đang chạy tại ' + baseURL + '</div>';
+                    return true;
+                } else {
+                    throw new Error('Backend response error: ' + response.status);
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">❌ Backend KHÔNG chạy - ' + error.message + '</div>';
+                return false;
+            }
+        }
+        
+        async function testAPI(endpoint) {
+            const resultsDiv = document.getElementById('results');
+            const url = baseURL + endpoint;
+            
+            resultsDiv.innerHTML += '<div class="result">🔄 Testing: ' + endpoint + '...</div>';
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                resultsDiv.innerHTML += `
+                    <div class="result ${response.ok ? 'success' : 'error'}">
+                        <h3>📡 ${endpoint}</h3>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Response Type:</strong> ${Array.isArray(data) ? 'Array' : typeof data}</p>
+                        <p><strong>Data Count:</strong> ${Array.isArray(data) ? data.length : (data.data ? data.data.length : 'N/A')}</p>
+                        <details>
+                            <summary>View Raw Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="result error">
+                        <h3>❌ ${endpoint}</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>Có thể: Backend chưa khởi động, CORS policy, hoặc endpoint không tồn tại</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function showMockData() {
+            const mockCVs = [
+                {
+                    id: 1,
+                    cvId: 1,
+                    userId: 19,
+                    title: "CV for Kỹ sư dữ liệu (Junior Data Engineer)",
+                    fileName: "CV_DataEngineer.pdf",
+                    fileSize: 1258291,
+                    createdAt: "2025-08-02T04:18:10",
+                    status: "uploaded"
+                },
+                {
+                    id: 2,
+                    cvId: 2,
+                    userId: 19,
+                    title: "CV for Chuyên viên hỗ trợ kỹ thuật (IT Helpdesk)",
+                    fileName: "CV_ITHelpdesk.pdf", 
+                    fileSize: 1154048,
+                    createdAt: "2025-08-02T22:02:30",
+                    status: "uploaded"
+                }
+            ];
+            
+            document.getElementById('results').innerHTML += `
+                <div class="result success">
+                    <h3>📋 Mock CV Data (như database)</h3>
+                    <p><strong>Count:</strong> ${mockCVs.length} CVs cho User ID 19</p>
+                    <p><strong>Status:</strong> Dữ liệu này khớp với database screenshots</p>
+                    <pre>${JSON.stringify(mockCVs, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        function testProfilePageLogic() {
+            // Simulate ProfilePage transformation
+            const apiResponse = {
+                success: true,
+                message: "CVs retrieved successfully",
+                data: [
+                    {
+                        cvId: 1,
+                        userId: 19,
+                        title: "CV for Kỹ sư dữ liệu (Junior Data Engineer)",
+                        fileName: "CV_DataEngineer.pdf",
+                        fileSize: 1258291,
+                        createdAt: "2025-08-02T04:18:10",
+                        job: null
+                    },
+                    {
+                        cvId: 2,
+                        userId: 19,
+                        title: "CV for Chuyên viên hỗ trợ kỹ thuật (IT Helpdesk)",
+                        fileName: "CV_ITHelpdesk.pdf",
+                        fileSize: 1154048,
+                        createdAt: "2025-08-02T22:02:30",
+                        job: null
+                    }
+                ]
+            };
+            
+            // Simulate ProfilePage processing
+            const cvData = apiResponse.data;
+            const processedCVs = cvData.map((cv, index) => {
+                const hasJob = cv.job && Object.keys(cv.job).length > 0;
+                
+                return {
+                    id: cv.cvId,
+                    cvId: cv.cvId,
+                    jobTitle: hasJob ? cv.job.title : (cv.title || 'CV đã tải lên'),
+                    company: hasJob ? 'Công ty XYZ' : 'Sẵn sàng ứng tuyển',
+                    location: hasJob ? cv.job.location : 'Linh hoạt',
+                    salary: 'Thỏa thuận',
+                    status: hasJob ? 'pending' : 'uploaded',
+                    appliedDate: cv.createdAt,
+                    cvFileName: cv.fileName,
+                    coverLetter: hasJob ? 'Đã nộp đơn ứng tuyển' : 'CV đã được tải lên thành công',
+                    fileSize: (cv.fileSize / (1024 * 1024)).toFixed(1) + ' MB',
+                    skillTags: []
+                };
+            });
+            
+            document.getElementById('results').innerHTML += `
+                <div class="result success">
+                    <h3>⚙️ ProfilePage Logic Test</h3>
+                    <p><strong>Input:</strong> API Response simulation</p>
+                    <p><strong>Output:</strong> Processed CV list for UI</p>
+                    <p><strong>Count:</strong> ${processedCVs.length} CVs processed</p>
+                    <details>
+                        <summary>View Processed Data</summary>
+                        <pre>${JSON.stringify(processedCVs, null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+        }
+        
+        // Auto-check backend status on load
+        window.onload = function() {
+            testBackendStatus();
+        };
+    </script>
+</body>
+</html>

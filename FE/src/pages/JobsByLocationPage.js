@@ -6,7 +6,7 @@ import FilterSidebar from '../components/FilterSidebar';
 import Pagination from '../components/Pagination';
 import jobService from '../services/jobService';
 
-function JobsByLocationPage() {
+function JobsByLocationPage({ showAlert }) {
   const navigate = useNavigate();
   const { locationSlug } = useParams();
   const [jobs, setJobs] = useState([]);
@@ -29,16 +29,20 @@ function JobsByLocationPage() {
   const getActualLocationName = (slug) => {
     if (!slug) return null;
     
-    // Map common slugs to actual database values (dùng values đã test thành công)
+    // Map common slugs to actual database values với nhiều biến thể tên địa điểm
     const locationMap = {
-      'ha-noi': 'Ha Noi', // Dùng "Ha Noi" vì API đã test thành công 
-      'ho-chi-minh': 'Ho Chi Minh City',
-      'da-nang': 'Da Nang',
-      'hai-phong': 'Hai Phong', 
-      'can-tho': 'Can Tho'
+      'ha-noi': ['Ha Noi', 'Hà Nội', 'Hanoi', 'HÃ  Ná»i'],
+      'ho-chi-minh': [
+        'Ho Chi Minh City', 'TP. Hồ Chí Minh', 'Ho Chi Minh', 'Hồ Chí Minh', 
+        'TPHCM', 'HCM', 'Saigon', 'Há» ChÃ­ Minh', 'TP.HCM', 'TP HCM',
+        'Thành phố Hồ Chí Minh', 'tp ho chi minh', 'hcmc'
+      ],
+      'da-nang': ['Da Nang', 'Đà Nẵng', 'Danang', 'Äà Náºµng'],
+      'hai-phong': ['Hai Phong', 'Hải Phòng', 'Haiphong', 'Háº£i PhÃ²ng'],
+      'can-tho': ['Can Tho', 'Cần Thơ', 'Cantho', 'Cáº§n ThÆ¡']
     };
     
-    return locationMap[slug] || slug;
+    return locationMap[slug] || [slug];
   };
 
   const handleNavigate = (routeName, params = {}) => {
@@ -52,21 +56,29 @@ function JobsByLocationPage() {
   useEffect(() => {
     const fetchJobsByLocation = async () => {
       try {
+        console.log('=== JOBS BY LOCATION DEBUG ===');
         console.log(`Fetching jobs for location: ${locationSlug || 'all'} with filters:`, filters);
+        console.log('Current environment:', process.env.NODE_ENV);
         setLoading(true);
         
         let jobsData = [];
         if (locationSlug) {
-          // Convert slug to actual location name for database query
-          const actualLocationName = getActualLocationName(locationSlug);
-          console.log(`Using actual location name: ${actualLocationName} for slug: ${locationSlug}`);
+          // Convert slug to actual location variations for database query
+          const locationVariations = getActualLocationName(locationSlug);
+          console.log(`Using location variations: ${JSON.stringify(locationVariations)} for slug: ${locationSlug}`);
           
-          // Fetch jobs by specific location
-          jobsData = await jobService.getJobsByLocation(actualLocationName, { 
+          // FORCE DEVELOPMENT MODE để test
+          console.log('FORCING DEVELOPMENT MODE FOR TESTING...');
+          
+          // Fetch jobs by specific location variations
+          jobsData = await jobService.getJobsByLocation(locationVariations, { 
             ...filters, 
             page: currentPage - 1, 
             size: 10 
           });
+          
+          console.log('Jobs data received from service:', jobsData);
+          console.log('Number of jobs:', jobsData?.length || 0);
         } else {
           // Fetch all jobs with location filter from sidebar
           const response = await jobService.getAllJobs({ 
@@ -80,6 +92,11 @@ function JobsByLocationPage() {
         setJobs(jobsData);
         setTotalPages(Math.ceil(jobsData.length / 10));
         setError(null);
+        
+        console.log(`Successfully loaded ${jobsData.length} jobs for location: ${locationSlug || 'all'}`);
+        if (jobsData.length > 0) {
+          console.log('Sample job locations:', jobsData.slice(0, 3).map(job => job.location));
+        }
       } catch (err) {
         console.error('Error fetching jobs by location:', err);
         setError('Không thể tải danh sách việc làm. Vui lòng thử lại.');
@@ -150,7 +167,7 @@ function JobsByLocationPage() {
             <>
               <div className="grid grid-cols-1 gap-4">
                 {jobs.map(job => (
-                  <JobCard key={job.id} job={job} navigate={navigate} />
+                  <JobCard key={job.id} job={job} navigate={navigate} showAlert={showAlert} />
                 ))}
               </div>
               <Pagination

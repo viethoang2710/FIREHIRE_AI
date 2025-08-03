@@ -23,6 +23,8 @@ const JobManagement = () => {
   // Applications modal state
   const [showApplications, setShowApplications] = useState(false);
   const [selectedJobApplications, setSelectedJobApplications] = useState(null);
+  const [applicationsData, setApplicationsData] = useState([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
 
   useEffect(() => {
     loadJobs();
@@ -60,6 +62,27 @@ const JobManagement = () => {
     }
     
     setFilteredJobs(filtered);
+  };
+
+  // Load applications for a specific job
+  const loadApplications = async (jobId) => {
+    setLoadingApplications(true);
+    try {
+      const response = await axios.get(`http://localhost:8080/api/applications/job/${jobId}`);
+      console.log('Applications API Response:', response.data);
+      
+      if (response.data.success && response.data.data) {
+        setApplicationsData(response.data.data);
+      } else {
+        setApplicationsData([]);
+        console.log('No applications found or API error:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error loading applications:', error);
+      setApplicationsData([]);
+    } finally {
+      setLoadingApplications(false);
+    }
   };
 
   const loadJobs = async () => {
@@ -102,6 +125,40 @@ const JobManagement = () => {
       default:
         return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">{status}</span>;
     }
+  };
+
+  const getApplicationStatusBadge = (status) => {
+    switch (status) {
+      case 'pending':
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Chờ xét</span>;
+      case 'viewed':
+        return <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Đã xem</span>;
+      case 'accepted':
+        return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Đã duyệt</span>;
+      case 'rejected':
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Từ chối</span>;
+      default:
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">{status}</span>;
+    }
+  };
+
+  // Calculate status counts from applications data
+  const getStatusCounts = () => {
+    const counts = {
+      accepted: 0,
+      pending: 0,
+      rejected: 0,
+      viewed: 0,
+      total: applicationsData.length
+    };
+
+    applicationsData.forEach(app => {
+      if (counts.hasOwnProperty(app.status)) {
+        counts[app.status]++;
+      }
+    });
+
+    return counts;
   };
 
   // Pagination calculations
@@ -148,11 +205,14 @@ const JobManagement = () => {
     setSelectedJobApplications(job);
     setShowApplications(true);
     setOpenDropdown(null);
+    // Load applications data from database
+    loadApplications(job.jobId || job.id);
   };
 
   const closeApplications = () => {
     setShowApplications(false);
     setSelectedJobApplications(null);
+    setApplicationsData([]); // Clear applications data
   };
 
   const handleChangeStatus = (job, newStatus) => {
@@ -716,17 +776,20 @@ const JobManagement = () => {
               <div className="mb-4 flex justify-between items-center">
                 <div className="flex items-center space-x-4">
                   <span className="text-lg font-medium text-gray-900">
-                    Tổng số ứng viên: {selectedJobApplications.applicationCount || 0}
+                    Tổng số ứng viên: {getStatusCounts().total}
                   </span>
                   <div className="flex space-x-2">
                     <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                      Đã duyệt: 3
+                      Đã duyệt: {getStatusCounts().accepted}
                     </span>
                     <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-                      Chờ xét: 5
+                      Chờ xét: {getStatusCounts().pending}
                     </span>
                     <span className="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full">
-                      Từ chối: 2
+                      Từ chối: {getStatusCounts().rejected}
+                    </span>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                      Đã xem: {getStatusCounts().viewed}
                     </span>
                   </div>
                 </div>
@@ -761,107 +824,79 @@ const JobManagement = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {/* Sample application data - you would replace this with real data */}
-                    {[
-                      {
-                        id: 1,
-                        name: "Nguyễn Văn A",
-                        email: "nguyenvana@email.com",
-                        phone: "0901234567",
-                        appliedDate: "2025-01-15",
-                        status: "pending"
-                      },
-                      {
-                        id: 2,
-                        name: "Trần Thị B",
-                        email: "tranthib@email.com", 
-                        phone: "0907654321",
-                        appliedDate: "2025-01-14",
-                        status: "approved"
-                      },
-                      {
-                        id: 3,
-                        name: "Lê Văn C",
-                        email: "levanc@email.com",
-                        phone: "0903456789",
-                        appliedDate: "2025-01-13",
-                        status: "rejected"
-                      }
-                    ].map((application) => (
-                      <tr key={application.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-medium">
-                                {application.name.charAt(0)}
-                              </span>
-                            </div>
-                            <div className="ml-3">
-                              <div className="text-sm font-medium text-gray-900">
-                                {application.name}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {application.email}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {application.phone}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {new Date(application.appliedDate).toLocaleDateString('vi-VN')}
-                        </td>
-                        <td className="px-4 py-4">
-                          {application.status === 'approved' && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                              Đã duyệt
-                            </span>
-                          )}
-                          {application.status === 'pending' && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                              Chờ xét
-                            </span>
-                          )}
-                          {application.status === 'rejected' && (
-                            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                              Từ chối
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex space-x-2">
-                            <button className="text-blue-600 hover:text-blue-800 text-sm">
-                              Xem CV
-                            </button>
-                            <button className="text-green-600 hover:text-green-800 text-sm">
-                              Phê duyệt
-                            </button>
-                            <button className="text-red-600 hover:text-red-800 text-sm">
-                              Từ chối
-                            </button>
+                    {loadingApplications ? (
+                      <tr>
+                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                          <div className="flex justify-center items-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Đang tải danh sách ứng viên...
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : applicationsData.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                          Chưa có ứng viên nào ứng tuyển cho công việc này
+                        </td>
+                      </tr>
+                    ) : (
+                      applicationsData.map((application) => (
+                        <tr key={application.applicationId} className="hover:bg-gray-50">
+                          <td className="px-4 py-4">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 font-medium">
+                                  {(application.candidateName || 'U').charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {application.candidateName || 'Ứng viên ẩn danh'}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  CV: {application.cvTitle || 'Không có tiêu đề'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            {application.candidateEmail || 'Không có email'}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            {application.candidatePhone || 'Không có SĐT'}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString('vi-VN') : 'Không có ngày'}
+                          </td>
+                          <td className="px-4 py-4">
+                            {getApplicationStatusBadge(application.status)}
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex space-x-2">
+                              <button className="text-blue-600 hover:text-blue-800 text-sm">
+                                Xem CV
+                              </button>
+                              {application.status !== 'accepted' && (
+                                <button className="text-green-600 hover:text-green-800 text-sm">
+                                  Phê duyệt
+                                </button>
+                              )}
+                              {application.status !== 'rejected' && (
+                                <button className="text-red-600 hover:text-red-800 text-sm">
+                                  Từ chối
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
-
-              {/* Empty state when no applications */}
-              {(selectedJobApplications.applicationCount || 0) === 0 && (
-                <div className="text-center py-12">
-                  <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Chưa có ứng viên nào
-                  </h3>
-                  <p className="text-gray-500">
-                    Công việc này chưa nhận được đơn ứng tuyển nào.
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Modal Footer */}

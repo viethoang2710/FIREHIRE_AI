@@ -45,6 +45,9 @@ public class User {
     @Column(name = "CreatedAt", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "LastLogin")
+    private LocalDateTime lastLogin;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @JsonIgnore

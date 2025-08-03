@@ -27,6 +27,13 @@ public class RecruiterController {
     @PostMapping("/jobs")
     public ResponseEntity<ApiResponse<JobPostingDTO>> createJobPosting(
             @RequestBody JobPostingRequest request) {
+        System.out.println("=== DEBUG: Nhận được request tạo job ===");
+        System.out.println("Title: " + request.getTitle());
+        System.out.println("Company Name: " + request.getCompanyName());
+        System.out.println("Company Logo: " + request.getCompanyLogo());
+        System.out.println(
+                "Logo length: " + (request.getCompanyLogo() != null ? request.getCompanyLogo().length() : "null"));
+
         return ResponseEntity.ok(jobPostingService.createJobPosting(request));
     }
 

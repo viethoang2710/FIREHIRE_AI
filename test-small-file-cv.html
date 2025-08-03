@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Upload Test - Small File</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin: 5px; }
+        input, textarea { margin: 10px; padding: 10px; width: 300px; }
+        #log { background: #f5f5f5; padding: 10px; height: 400px; overflow-y: auto; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+        .file-info { background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>CV Upload Test - Small File</h1>
+    
+    <div class="section">
+        <h3>Step 1: Create Small Test File</h3>
+        <button onclick="createTestFile()">Create Small PDF Test File</button>
+        <div id="fileInfo" class="file-info"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 2: Test CV Upload</h3>
+        <input type="number" id="userId" value="19" placeholder="User ID">
+        <input type="number" id="jobId" value="1" placeholder="Job ID">
+        <input type="file" id="cvFile" accept=".pdf,.doc,.docx,.txt">
+        <textarea id="coverLetter" placeholder="Cover letter...">Test cover letter for small file upload</textarea>
+        <br>
+        <button onclick="testSmallFileUpload()">Upload Small File</button>
+        <button onclick="checkBackendStatus()">Check Backend Status</button>
+    </div>
+
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="log"></div>
+        <button onclick="clearLog()">Clear</button>
+    </div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<span class="${className}">[${new Date().toLocaleTimeString()}] ${msg}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function createTestFile() {
+            // Create a small text file for testing
+            const content = "Test CV Content\n\nName: Test User\nPosition: Software Developer\nExperience: 3 years\n\nThis is a small test file for CV upload testing.";
+            const blob = new Blob([content], { type: 'text/plain' });
+            const file = new File([blob], 'test-cv.txt', { type: 'text/plain' });
+            
+            // Create a data transfer to simulate file selection
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('cvFile').files = dt.files;
+            
+            document.getElementById('fileInfo').innerHTML = `
+                <strong>Test file created:</strong><br>
+                Name: ${file.name}<br>
+                Size: ${file.size} bytes<br>
+                Type: ${file.type}
+            `;
+            
+            log('Small test file created: ' + file.name + ' (' + file.size + ' bytes)', 'success');
+        }
+
+        async function checkBackendStatus() {
+            log('Checking backend status...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/applications');
+                log('Backend status: ' + response.status, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('Applications API working: ' + JSON.stringify(data.success), 'success');
+                } else {
+                    log('Backend not responding properly', 'error');
+                }
+            } catch (error) {
+                log('Backend connection error: ' + error.message, 'error');
+                log('Please start the backend first!', 'error');
+            }
+        }
+
+        async function testSmallFileUpload() {
+            const userId = document.getElementById('userId').value;
+            const jobId = document.getElementById('jobId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+
+            log('=== TESTING SMALL FILE UPLOAD ===', 'info');
+            log(`User ID: ${userId}`, 'info');
+            log(`Job ID: ${jobId}`, 'info');
+            
+            if (!cvFile) {
+                log('ERROR: No file selected. Click "Create Small PDF Test File" first.', 'error');
+                return;
+            }
+
+            log(`File: ${cvFile.name} (${cvFile.size} bytes, ${cvFile.type})`, 'info');
+
+            // Check file size
+            if (cvFile.size > 5 * 1024 * 1024) {
+                log('WARNING: File is larger than 5MB', 'error');
+            } else {
+                log('File size OK (under 5MB)', 'success');
+            }
+
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            formData.append('coverLetter', coverLetter);
+
+            try {
+                log('Sending request to: http://localhost:8080/api/applications/apply-with-cv', 'info');
+                
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const responseText = await response.text();
+                log(`Response body: ${responseText}`, 'info');
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        log('SUCCESS! CV uploaded successfully!', 'success');
+                        log('Response data: ' + JSON.stringify(data, null, 2), 'success');
+                    } catch (e) {
+                        log('Upload successful but response is not JSON: ' + responseText, 'success');
+                    }
+                } else {
+                    log(`Upload failed with status ${response.status}`, 'error');
+                    
+                    if (response.status === 413) {
+                        log('ERROR: File too large. Try a smaller file.', 'error');
+                    } else if (response.status === 401) {
+                        log('ERROR: Authentication required. Backend security config issue.', 'error');
+                    } else if (response.status === 500) {
+                        log('ERROR: Server error. Check backend logs.', 'error');
+                    }
+                }
+
+            } catch (error) {
+                log('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Auto-check backend on page load
+        window.onload = function() {
+            log('Page loaded. Click "Check Backend Status" to verify backend is running.', 'info');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Authentication Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Authentication Fix - User ID Detection</h1>
+    
+    <div class="section info">
+        <h3>Instructions:</h3>
+        <p>1. Login with your credentials</p>
+        <p>2. Check the localStorage data to see if user.id is properly set</p>
+        <p>3. Test CV save functionality</p>
+    </div>
+
+    <div class="section">
+        <h3>Login Test</h3>
+        <form id="loginForm">
+            <div>
+                <label>Email: </label>
+                <input type="email" id="email" value="candidate1@example.com" required style="width: 200px; padding: 5px;">
+            </div>
+            <div style="margin-top: 10px;">
+                <label>Password: </label>
+                <input type="password" id="password" value="password123" required style="width: 200px; padding: 5px;">
+            </div>
+            <button type="submit" style="margin-top: 10px;">Login</button>
+        </form>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>LocalStorage Data Check</h3>
+        <button onclick="checkUserData()">Check User Data</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <div id="storageResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test CV Save Function</h3>
+        <button onclick="testCVSave()">Test CV Save</button>
+        <div id="cvResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081/api';
+
+        // Login function
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+
+            try {
+                resultDiv.innerHTML = '<p>Logging in...</p>';
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                console.log('Login response:', data);
+
+                if (response.ok) {
+                    // Simulate the same logic as authService.js
+                    const userData = {
+                        email: email,
+                        role: data.role || 'CANDIDATE',
+                        fullName: data.fullName || 'User',
+                        employerId: data.employerId || null,
+                        id: data.userId || data.user?.id || null
+                    };
+
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    localStorage.setItem('token', data.token || 'temp-token');
+                    localStorage.setItem('debug_response', JSON.stringify(data));
+
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>Login Successful!</strong></p>
+                            <p>User ID from backend: ${data.userId || 'NOT FOUND'}</p>
+                            <p>User ID stored in localStorage: ${userData.id || 'NULL'}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error"><p>Login failed: ${data.message || 'Unknown error'}</p></div>`;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                resultDiv.innerHTML = `<div class="error"><p>Login error: ${error.message}</p></div>`;
+            }
+        });
+
+        // Check user data in localStorage
+        function checkUserData() {
+            const resultDiv = document.getElementById('storageResult');
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            const debugResponse = localStorage.getItem('debug_response');
+
+            if (user) {
+                const userData = JSON.parse(user);
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>User Data Found:</h4>
+                        <pre>${JSON.stringify(userData, null, 2)}</pre>
+                        <h4>Token:</h4>
+                        <pre>${token || 'No token'}</pre>
+                        <h4>Debug Response:</h4>
+                        <pre>${debugResponse ? JSON.stringify(JSON.parse(debugResponse), null, 2) : 'No debug data'}</pre>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = '<div class="error"><p>No user data found in localStorage</p></div>';
+            }
+        }
+
+        // Clear storage
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('storageResult').innerHTML = '<div class="info"><p>Storage cleared</p></div>';
+        }
+
+        // Test CV save
+        async function testCVSave() {
+            const resultDiv = document.getElementById('cvResult');
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+
+            if (!user) {
+                resultDiv.innerHTML = '<div class="error"><p>Please login first</p></div>';
+                return;
+            }
+
+            try {
+                const userData = JSON.parse(user);
+                const userId = userData.id || userData.userId || userData.user_id;
+
+                resultDiv.innerHTML = '<p>Testing CV save...</p>';
+
+                if (!userId) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p><strong>Cannot determine user ID!</strong></p>
+                            <p>Available user data:</p>
+                            <pre>${JSON.stringify(userData, null, 2)}</pre>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const cvData = {
+                    userId: userId,
+                    personalInfo: {
+                        fullName: "Test User",
+                        email: userData.email,
+                        phone: "123-456-7890"
+                    },
+                    experience: [],
+                    education: [],
+                    skills: []
+                };
+
+                const response = await fetch(`${API_BASE}/cv`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(cvData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>CV Save Successful!</strong></p>
+                            <p>User ID used: ${userId}</p>
+                            <p>CV ID: ${result.cvId || result.id || 'Unknown'}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p><strong>CV Save Failed:</strong></p>
+                            <p>${result.message || 'Unknown error'}</p>
+                            <p>User ID attempted: ${userId}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('CV save error:', error);
+                resultDiv.innerHTML = `<div class="error"><p>CV save error: ${error.message}</p></div>`;
+            }
+        }
+
+        // Auto-check user data on page load
+        window.onload = function() {
+            checkUserData();
+        };
+    </script>
+</body>
+</html>

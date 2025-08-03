@@ -24,7 +24,8 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
     type: 'Full-time',
     industry: 'Công nghệ thông tin',
     experienceLevel: 'Junior',
-    companyName: ''
+    companyName: '',
+    companyLogo: null
   });
   
   // Nếu đang chỉnh sửa, điền dữ liệu vào form
@@ -40,10 +41,46 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
         type: jobData.type || jobData.jobType || 'Full-time', // Handle both fields
         industry: jobData.industry || 'Công nghệ thông tin',
         experienceLevel: jobData.experienceLevel || 'Junior',
-        companyName: jobData.companyName || ''
+        companyName: jobData.companyName || '',
+        companyLogo: jobData.companyLogo || null
       });
+      
+      // Set logo preview nếu có
+      if (jobData.companyLogo) {
+        // Nếu logo là URL thì set trực tiếp
+        if (typeof jobData.companyLogo === 'string') {
+          setLogoPreview(jobData.companyLogo);
+        }
+      } else {
+        setLogoPreview(null);
+      }
+    } else {
+      // Reset khi không edit
+      setLogoPreview(null);
     }
   }, [isEdit, jobData]);
+
+  // Reset form khi đóng modal
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        jobTitle: '',
+        location: '',
+        salary: '',
+        description: '',
+        requirements: '',
+        benefits: '',
+        type: 'Full-time',
+        industry: 'Công nghệ thông tin',
+        experienceLevel: 'Junior',
+        companyName: '',
+        companyLogo: null
+      });
+      setLogoPreview(null);
+      setShowSuccess(false);
+      setSubmitError(null);
+    }
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -53,9 +90,56 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
     }));
   };
 
+  // Function để handle upload logo
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Kiểm tra định dạng file
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Vui lòng chọn file ảnh (JPG, PNG, GIF)');
+        return;
+      }
+      
+      // Kiểm tra kích thước file (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước file không được vượt quá 5MB');
+        return;
+      }
+      
+      // Cập nhật formData
+      setFormData(prev => ({
+        ...prev,
+        companyLogo: file
+      }));
+      
+      // Tạo preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Function để xóa logo
+  const handleRemoveLogo = () => {
+    setFormData(prev => ({
+      ...prev,
+      companyLogo: null
+    }));
+    setLogoPreview(null);
+    // Reset input file
+    const fileInput = document.getElementById('companyLogo');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,6 +172,7 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
       industry: formData.industry,
       experienceLevel: formData.experienceLevel,
       companyName: formData.companyName,
+      companyLogo: formData.companyLogo, // Thêm logo vào dữ liệu
       status: isEdit ? (jobData?.status || "ACTIVE") : "ACTIVE", // Use ACTIVE for database
       employerId: employerId
     };
@@ -255,6 +340,57 @@ const PostJobModal = ({ isOpen, onClose, jobData, isEdit = false }) => {
               onChange={handleChange}
               required
             />
+          </div>
+          
+          {/* Logo công ty */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Logo công ty</label>
+            <div className="mt-1 flex items-center space-x-4">
+              {/* Preview area */}
+              <div className="flex-shrink-0">
+                {logoPreview ? (
+                  <div className="relative">
+                    <img 
+                      src={logoPreview} 
+                      alt="Logo preview" 
+                      className="w-20 h-20 object-cover border-2 border-gray-300 rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-400 text-xs text-center">Logo<br/>công ty</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Upload button */}
+              <div className="flex-grow">
+                <input
+                  type="file"
+                  id="companyLogo"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="companyLogo"
+                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  {logoPreview ? 'Thay đổi logo' : 'Chọn logo'}
+                </label>
+                <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF. Tối đa 5MB</p>
+              </div>
+            </div>
           </div>
           
           <div>
@@ -624,9 +760,63 @@ const ViewJobDetailModal = ({ isOpen, onClose, job }) => {
         </div>
         <div className="p-6 space-y-6">
           <div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-1">{job.title}</h3>
-            <p className="text-gray-600">{job.location} • {job.type}</p>
-            <p className="text-blue-600 font-semibold mt-2">Mức lương: {job.salary}</p>
+            {/* Header với logo và thông tin công ty */}
+            <div className="flex items-start space-x-4 mb-4">
+              {/* Logo công ty */}
+              <div className="flex-shrink-0">
+                {job.companyLogo ? (
+                  <img 
+                    src={job.companyLogo} 
+                    alt={`${job.companyName || 'Company'} logo`}
+                    className="w-16 h-16 object-cover border-2 border-gray-200 rounded-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                {/* Fallback nếu không có logo */}
+                <div 
+                  className={`w-16 h-16 bg-gray-100 border-2 border-gray-200 rounded-lg flex items-center justify-center ${job.companyLogo ? 'hidden' : 'flex'}`}
+                >
+                  <span className="text-gray-400 text-xs text-center">
+                    {job.companyName ? job.companyName.charAt(0).toUpperCase() : 'C'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Thông tin chính */}
+              <div className="flex-grow">
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">{job.title}</h3>
+                {job.companyName && (
+                  <p className="text-lg font-medium text-gray-700 mb-1">{job.companyName}</p>
+                )}
+                <p className="text-gray-600">{job.location} • {job.type}</p>
+                <p className="text-blue-600 font-semibold mt-2">Mức lương: {job.salary}</p>
+              </div>
+            </div>
+            
+            {/* Thông tin ngành nghề và kinh nghiệm */}
+            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                {job.industry && (
+                  <div>
+                    <span className="font-medium text-gray-700">Ngành nghề:</span>
+                    <p className="text-gray-600">{job.industry}</p>
+                  </div>
+                )}
+                {job.experienceLevel && (
+                  <div>
+                    <span className="font-medium text-gray-700">Kinh nghiệm:</span>
+                    <p className="text-gray-600">{job.experienceLevel}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium text-gray-700">Loại hình:</span>
+                  <p className="text-gray-600">{job.type}</p>
+                </div>
+              </div>
+            </div>
             
             <div className="mt-4">
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${job.status === 'Đang hiển thị' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -635,6 +825,11 @@ const ViewJobDetailModal = ({ isOpen, onClose, job }) => {
               <span className="ml-3 text-gray-600 text-sm">
                 <Users size={16} className="inline mr-1" /> {job.applicants} ứng viên
               </span>
+              {job.publishedAt && (
+                <span className="ml-3 text-gray-600 text-sm">
+                  Đăng ngày: {new Date(job.publishedAt).toLocaleDateString('vi-VN')}
+                </span>
+              )}
             </div>
           </div>
           
@@ -673,6 +868,43 @@ const ViewJobDetailModal = ({ isOpen, onClose, job }) => {
                   <li>Cơ hội học hỏi và phát triển</li>
                 </ul>
               )}
+            </div>
+          </div>
+          
+          {/* Footer với thông tin bổ sung */}
+          <div className="border-t pt-4 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+              <div>
+                <span className="font-medium">Mã tin:</span> #{job.id}
+              </div>
+              {job.createdAt && (
+                <div>
+                  <span className="font-medium">Ngày đăng:</span>{' '}
+                  {new Date(job.createdAt).toLocaleDateString('vi-VN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </div>
+              )}
+              {job.updatedAt && job.updatedAt !== job.createdAt && (
+                <div>
+                  <span className="font-medium">Cập nhật lần cuối:</span>{' '}
+                  {new Date(job.updatedAt).toLocaleDateString('vi-VN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </div>
+              )}
+              <div>
+                <span className="font-medium">Trạng thái:</span>{' '}
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  job.status === 'Đang hiển thị' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {job.status}
+                </span>
+              </div>
             </div>
           </div>
         </div>

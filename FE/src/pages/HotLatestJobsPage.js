@@ -1,10 +1,10 @@
-// src/pages/HotLatestJobsPage.js
+// src/pages/HotLatestJobsPage.js (hiển thị tất cả việc làm)
 import React, { useState, useEffect } from 'react';
 import JobCard from '../components/JobCard';
 import Pagination from '../components/Pagination';
 import jobService from '../services/jobService';
 
-function HotLatestJobsPage({ navigate }) {
+function HotLatestJobsPage({ navigate, showAlert }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,15 +15,26 @@ function HotLatestJobsPage({ navigate }) {
     const fetchJobs = async () => {
       try {
         setLoading(true);
-        // Fetch hot and latest jobs from API
-        const response = await jobService.getHotLatestJobs();
-        const hotLatestJobs = response.content || [];
-        setJobs(hotLatestJobs);
-        setTotalPages(Math.ceil(hotLatestJobs.length / 10)); // 10 jobs per page
+        // Fetch tất cả công việc từ API với phân trang
+        const response = await jobService.getAllJobs({
+          page: currentPage - 1, // Backend thường bắt đầu từ 0
+          size: 10 // 10 jobs per page
+        });
+        
+        console.log('All jobs API response:', response);
+        
+        if (response && response.content) {
+          setJobs(response.content);
+          setTotalPages(Math.ceil((response.totalElements || response.content.length) / 10));
+        } else {
+          setJobs([]);
+          setTotalPages(1);
+        }
         setError(null);
       } catch (err) {
-        console.error('Error fetching hot/latest jobs:', err);
+        console.error('Error fetching all jobs:', err);
         setError('Không thể tải danh sách việc làm. Vui lòng thử lại.');
+        setJobs([]);
       } finally {
         setLoading(false);
       }
@@ -38,7 +49,7 @@ function HotLatestJobsPage({ navigate }) {
 
   if (loading) return (
     <div className="container mx-auto px-4 py-8 text-center">
-      <p className="text-lg text-gray-700">Đang tải việc làm Hot/Mới nhất...</p>
+      <p className="text-lg text-gray-700">Đang tải danh sách việc làm...</p>
     </div>
   );
   if (error) return (
@@ -49,13 +60,13 @@ function HotLatestJobsPage({ navigate }) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Việc làm Hot / Mới nhất</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Tất cả việc làm</h1>
 
       {jobs.length > 0 ? (
         <>
           <div className="grid grid-cols-1 gap-4">
             {jobs.map(job => (
-              <JobCard key={job.id} job={job} navigate={navigate} />
+              <JobCard key={job.id} job={job} navigate={navigate} showAlert={showAlert} />
             ))}
           </div>
           <Pagination
@@ -65,7 +76,7 @@ function HotLatestJobsPage({ navigate }) {
           />
         </>
       ) : (
-        <p className="text-center text-gray-600">Hiện không có việc làm Hot/Mới nhất nào.</p>
+        <p className="text-center text-gray-600">Hiện không có việc làm nào.</p>
       )}
     </div>
   );

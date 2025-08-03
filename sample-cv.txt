@@ -1,0 +1,27 @@
+Sample CV Document for Testing
+
+Nguyễn Văn A
+Java Developer
+
+Contact Information:
+Email: nguyenvana@example.com
+Phone: 0123456789
+Address: Ho Chi Minh City, Vietnam
+
+Experience:
+- 3 years of Java development
+- Spring Boot framework
+- RESTful API development
+- MySQL database
+
+Skills:
+- Java, Spring Boot
+- HTML, CSS, JavaScript
+- MySQL, PostgreSQL
+- Git, Docker
+
+Education:
+- Bachelor of Computer Science
+- University of Technology
+
+This is a test CV file for checking CV upload functionality.

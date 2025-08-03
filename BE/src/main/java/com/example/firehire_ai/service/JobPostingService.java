@@ -50,12 +50,24 @@ public class JobPostingService {
                     .skillsRequired(request.getSkillsRequired())
                     .benefits(request.getBenefits())
                     .companyName(request.getCompanyName())
+                    .companyLogo(request.getCompanyLogo())
                     .status("ACTIVE")
                     .createdDate(LocalDateTime.now())
                     .build();
 
+            System.out.println("=== DEBUG: JobPosting entity trước khi save ===");
+            System.out.println("Company Logo: " + jobPosting.getCompanyLogo());
+            System.out.println("Logo length: "
+                    + (jobPosting.getCompanyLogo() != null ? jobPosting.getCompanyLogo().length() : "null"));
+
             // Lưu vào database
             jobPosting = jobPostingRepository.save(jobPosting);
+
+            System.out.println("=== DEBUG: JobPosting entity sau khi save ===");
+            System.out.println("ID: " + jobPosting.getId());
+            System.out.println("Company Logo: " + jobPosting.getCompanyLogo());
+            System.out.println("Logo length: "
+                    + (jobPosting.getCompanyLogo() != null ? jobPosting.getCompanyLogo().length() : "null"));
 
             return ApiResponse.success("Đã tạo tin tuyển dụng thành công", JobPostingDTO.fromEntity(jobPosting));
         } catch (Exception e) {
@@ -97,6 +109,8 @@ public class JobPostingService {
             existingJob.setBenefits(request.getBenefits() != null ? request.getBenefits() : existingJob.getBenefits());
             existingJob.setCompanyName(
                     request.getCompanyName() != null ? request.getCompanyName() : existingJob.getCompanyName());
+            existingJob.setCompanyLogo(
+                    request.getCompanyLogo() != null ? request.getCompanyLogo() : existingJob.getCompanyLogo());
             existingJob.setStatus(request.getStatus() != null ? request.getStatus() : existingJob.getStatus());
             existingJob.setUpdatedDate(LocalDateTime.now());
 

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Both CV Upload Endpoints</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; background: white; border-radius: 8px; }
+        .button { padding: 12px 24px; background: #28a745; color: white; border: none; cursor: pointer; margin: 5px; border-radius: 4px; }
+        .button.primary { background: #007bff; }
+        input, textarea { margin: 10px 0; padding: 12px; width: 100%; max-width: 400px; display: block; border: 1px solid #ddd; border-radius: 4px; }
+        #log { background: #f5f5f5; padding: 15px; height: 300px; overflow-y: auto; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; }
+        .error { color: #dc3545; font-weight: bold; }
+        .success { color: #28a745; font-weight: bold; }
+        .info { color: #007bff; }
+        .warning { color: #ffc107; }
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Test Both CV Upload Endpoints</h1>
+        
+        <div class="section">
+            <h3>🎯 Endpoint Comparison Test</h3>
+            <p><strong>Mục đích:</strong> So sánh endpoint mà test tool dùng VS endpoint mà frontend web dùng</p>
+            
+            <input type="number" id="userId" placeholder="User ID" value="1">
+            <input type="number" id="jobId" placeholder="Job ID" value="1">
+            <input type="file" id="cvFile" accept=".pdf,.doc,.docx,.txt">
+            <textarea id="coverLetter" placeholder="Cover letter...">Test CV upload với cả hai endpoint</textarea>
+            
+            <button class="button" onclick="createTestCV()">Create Test CV</button>
+            <button class="button primary" onclick="testBothEndpoints()">Test Both Endpoints</button>
+        </div>
+
+        <div class="comparison">
+            <!-- Test Tool Endpoint -->
+            <div class="section">
+                <h3>✅ Test Tool Endpoint</h3>
+                <p><code>/api/applications/apply-with-cv</code></p>
+                <button class="button" onclick="testApplicationsEndpoint()">Test Applications Endpoint</button>
+                <div id="applicationsResult"></div>
+            </div>
+
+            <!-- Frontend Web Endpoint -->
+            <div class="section">
+                <h3>🌐 Frontend Web Endpoint</h3>
+                <p><code>/api/jobs/{jobId}/apply</code></p>
+                <button class="button" onclick="testJobsEndpoint()">Test Jobs Endpoint</button>
+                <div id="jobsResult"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📋 Debug Log</h3>
+            <div id="log"></div>
+            <button class="button" onclick="clearLog()">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<span class="${className}">[${timestamp}] ${msg}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function createTestCV() {
+            const content = "Test CV Content\n\nName: Frontend Test User\nPosition: Web Developer\nExperience: 1 year\n\nSkills:\n- HTML/CSS\n- JavaScript\n- React\n\nThis CV tests both endpoints.";
+            const blob = new Blob([content], { type: 'text/plain' });
+            const file = new File([blob], 'frontend-test-cv.txt', { type: 'text/plain' });
+            
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('cvFile').files = dt.files;
+            
+            log('📄 Test CV file created: frontend-test-cv.txt (' + file.size + ' bytes)', 'success');
+        }
+
+        async function testApplicationsEndpoint() {
+            const userId = document.getElementById('userId').value;
+            const jobId = document.getElementById('jobId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+
+            log('🧪 Testing /api/applications/apply-with-cv endpoint...', 'info');
+
+            if (!cvFile) {
+                log('❌ No CV file selected', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            formData.append('coverLetter', coverLetter);
+
+            try {
+                const response = await fetch('http://localhost:8080/api/applications/apply-with-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const responseText = await response.text();
+                    log('✅ Applications endpoint SUCCESS!', 'success');
+                    log('📄 Response: ' + responseText, 'success');
+                    document.getElementById('applicationsResult').innerHTML = 
+                        `<div style="color: green;">✅ SUCCESS<br>Response: ${responseText}</div>`;
+                } else {
+                    const responseText = await response.text();
+                    log('❌ Applications endpoint FAILED: ' + responseText, 'error');
+                    document.getElementById('applicationsResult').innerHTML = 
+                        `<div style="color: red;">❌ FAILED<br>Error: ${responseText}</div>`;
+                }
+            } catch (error) {
+                log('❌ Applications endpoint network error: ' + error.message, 'error');
+                document.getElementById('applicationsResult').innerHTML = 
+                    `<div style="color: red;">❌ Network Error<br>${error.message}</div>`;
+            }
+        }
+
+        async function testJobsEndpoint() {
+            const userId = document.getElementById('userId').value;
+            const jobId = document.getElementById('jobId').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            const coverLetter = document.getElementById('coverLetter').value;
+
+            log('🌐 Testing /api/jobs/{jobId}/apply endpoint...', 'info');
+
+            if (!cvFile) {
+                log('❌ No CV file selected', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('candidateId', userId);
+            formData.append('cvFile', cvFile);
+            formData.append('coverLetter', coverLetter);
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/jobs/${jobId}/apply`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const responseText = await response.text();
+                    log('✅ Jobs endpoint SUCCESS!', 'success');
+                    log('📄 Response: ' + responseText, 'success');
+                    document.getElementById('jobsResult').innerHTML = 
+                        `<div style="color: green;">✅ SUCCESS<br>Response: ${responseText}</div>`;
+                } else {
+                    const responseText = await response.text();
+                    log('❌ Jobs endpoint FAILED: ' + responseText, 'error');
+                    document.getElementById('jobsResult').innerHTML = 
+                        `<div style="color: red;">❌ FAILED<br>Error: ${responseText}</div>`;
+                }
+            } catch (error) {
+                log('❌ Jobs endpoint network error: ' + error.message, 'error');
+                document.getElementById('jobsResult').innerHTML = 
+                    `<div style="color: red;">❌ Network Error<br>${error.message}</div>`;
+            }
+        }
+
+        async function testBothEndpoints() {
+            log('🔄 ===== TESTING BOTH ENDPOINTS ===== ', 'info');
+            
+            if (!document.getElementById('cvFile').files[0]) {
+                createTestCV();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Test Applications endpoint first
+            await testApplicationsEndpoint();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Test Jobs endpoint second
+            await testJobsEndpoint();
+
+            log('🏁 ===== ENDPOINT COMPARISON COMPLETE ===== ', 'info');
+        }
+
+        // Auto-initialization
+        window.onload = function() {
+            log('🚀 Endpoint comparison tool loaded', 'info');
+            log('🔧 This will test both CV upload endpoints', 'info');
+        };
+    </script>
+</body>
+</html>

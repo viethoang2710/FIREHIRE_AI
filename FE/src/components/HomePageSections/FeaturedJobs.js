@@ -1,10 +1,16 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Loader } from 'lucide-react';
 import jobService from '../../services/jobService';
+import { AuthContext } from '../../contexts/AuthContext';
+import ApplyJobModal from '../UI/ApplyJobModal';
 
-const FeaturedJobs = () => {
-  const fileInputRef = useRef(null);
+const FeaturedJobs = ({ showAlert }) => {
+  const { currentUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -52,25 +58,26 @@ const FeaturedJobs = () => {
     fetchJobs();
   }, []);
 
-  // Gọi khi click "Nộp CV"
-  const handleApplyClick = (jobId) => {
-    // Lưu lại jobId nếu cần (ở đây bạn có thể xử lý logic liên kết job sau này)
-    console.log("Ứng tuyển vào job ID:", jobId);
-
-    // Mở input file
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+  // Function để điều hướng đến trang hiển thị tất cả việc làm
+  const handleViewMoreJobs = () => {
+    navigate('/hot-latest-jobs');
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // TODO: Gửi file lên server hoặc xử lý tùy yêu cầu
-      console.log("File đã chọn:", file.name);
-      // Reset input để lần sau chọn lại cùng file vẫn gọi được
-      event.target.value = '';
+  // Gọi khi click "Nộp CV"
+  const handleApplyClick = (job) => {
+    if (!currentUser) {
+      showAlert('Vui lòng đăng nhập để nộp CV ứng tuyển', 'warning');
+      return;
     }
+
+    // Kiểm tra role - chỉ CANDIDATE mới được nộp CV
+    if (currentUser.role !== 'CANDIDATE') {
+      showAlert('Chỉ ứng viên mới có thể nộp CV ứng tuyển', 'warning');
+      return;
+    }
+
+    setSelectedJob(job);
+    setShowApplyModal(true);
   };
 
   return (
@@ -135,9 +142,9 @@ const FeaturedJobs = () => {
                     )}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleApplyClick(job.id)}
+                <button 
                   className="self-start mt-1 bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-3 rounded-md transition-colors"
+                  onClick={() => handleApplyClick(job)}
                 >
                   Nộp CV
                 </button>
@@ -146,17 +153,19 @@ const FeaturedJobs = () => {
         </div>
         )}
 
-        {/* Input file ẩn */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept=".pdf,.doc,.docx"
-          className="hidden"
-          onChange={handleFileChange}
+        {/* Apply Job Modal */}
+        <ApplyJobModal
+          isOpen={showApplyModal}
+          onClose={() => setShowApplyModal(false)}
+          job={selectedJob}
+          showAlert={showAlert}
         />
 
         <div className="text-center mt-10">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg transform hover:scale-105">
+          <button 
+            onClick={handleViewMoreJobs}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg transform hover:scale-105"
+          >
             Xem Thêm Việc Làm
           </button>
         </div>

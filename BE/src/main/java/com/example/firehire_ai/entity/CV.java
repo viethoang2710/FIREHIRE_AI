@@ -31,6 +31,10 @@ public class CV {
     @JoinColumn(name = "TemplateID")
     private CVTemplate template;
 
+    @ManyToOne
+    @JoinColumn(name = "JobID")
+    private JobPosting job;
+
     @Column(name = "Title", length = 100)
     private String title;
 
@@ -41,6 +45,23 @@ public class CV {
     @Column(name = "UpdatedAt")
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    // Fields for uploaded CV files
+    @Column(name = "FileName", length = 255)
+    private String fileName;
+
+    @Column(name = "FileSize")
+    private Long fileSize;
+
+    @Column(name = "FileType", length = 50)
+    private String fileType;
+
+    @Lob
+    @Column(name = "FileData")
+    private byte[] fileData;
+
+    @Column(name = "CoverLetter", length = 2000)
+    private String coverLetter;
 
     @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

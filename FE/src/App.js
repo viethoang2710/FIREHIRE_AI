@@ -46,6 +46,8 @@ import ViewApplicantsPage from './pages/ViewApplicantsPage'; // <-- Import trang
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import LoginDebugPage from './pages/LoginDebugPage';
 import StorageDebugPage from './pages/StorageDebugPage';
+import JobManagementPage from './pages/JobManagementPage';
+import EmployerCVListPage from './pages/EmployerCVListPage';
 
 function App() {
   const [alert, setAlert] = useState(null);
@@ -127,6 +129,16 @@ function App() {
               <Route path="/recruiter/jobs/:jobId/applicants" element={
                 <ProtectedRoute allowedRoles={['EMPLOYER']}>
                   <ViewApplicantsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/job-management" element={
+                <ProtectedRoute allowedRoles={['EMPLOYER', 'employer']}>
+                  <JobManagementPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/employer-cv-list/:jobId" element={
+                <ProtectedRoute allowedRoles={['EMPLOYER', 'employer']}>
+                  <EmployerCVListPage />
                 </ProtectedRoute>
               } />
 

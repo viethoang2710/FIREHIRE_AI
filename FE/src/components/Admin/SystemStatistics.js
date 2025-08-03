@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from '../../hooks/useAuth';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
@@ -9,6 +11,7 @@ import {
 } from 'lucide-react';
 
 const SystemStatistics = () => {
+  const { user, token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30'); // 7, 30, 90 days
   const [stats, setStats] = useState({
@@ -99,18 +102,34 @@ const SystemStatistics = () => {
   const loadStatistics = async () => {
     try {
       setLoading(true);
-      // Replace with actual API call
-      // const response = await api.get(`/admin/statistics?range=${dateRange}`);
-      // setStats(response.data);
       
-      // Using mock data for now
-      setTimeout(() => {
+      console.log('🔄 Loading statistics from API...');
+      
+      // Thêm authentication header
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      // Gọi đúng endpoint dashboard
+      const response = await axios.get(`http://localhost:8080/api/statistics/dashboard?days=${dateRange}`, {
+        headers
+      });
+      console.log('✅ Statistics API Response:', response.data);
+      
+      // Backend trả về dữ liệu trực tiếp, không có wrapper success/data
+      if (response.data) {
+        setStats(response.data);
+        console.log('✅ Statistics loaded from database:', response.data);
+      } else {
+        console.log('❌ No data received, using mock data');
         setStats(mockStats);
-        setLoading(false);
-      }, 1000);
+      }
     } catch (error) {
-      console.error('Error loading statistics:', error);
+      console.error('❌ Error loading statistics:', error);
+      console.log('🔄 Falling back to mock data...');
       setStats(mockStats);
+    } finally {
       setLoading(false);
     }
   };
@@ -228,7 +247,7 @@ const SystemStatistics = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Tăng trưởng người dùng</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={stats.userGrowth}>
+            <AreaChart data={stats.userGrowth?.data || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' })} />
               <YAxis />
@@ -246,7 +265,7 @@ const SystemStatistics = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Thống kê công việc</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={stats.jobStatistics}>
+            <BarChart data={stats.jobStatistics?.data || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -269,7 +288,7 @@ const SystemStatistics = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Luồng ứng tuyển</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={stats.applicationStats}>
+            <LineChart data={stats.applicationStats?.data || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tickFormatter={(value) => value.split('-')[1]} />
               <YAxis />
@@ -294,7 +313,7 @@ const SystemStatistics = () => {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={stats.categoryDistribution}
+                data={stats.categoryDistribution?.data || []}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -303,7 +322,7 @@ const SystemStatistics = () => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {stats.categoryDistribution.map((entry, index) => (
+                {(stats.categoryDistribution?.data || []).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -358,7 +377,7 @@ const SystemStatistics = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {stats.topCompanies.map((company, index) => (
+              {(stats.topCompanies?.data || []).map((company, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">

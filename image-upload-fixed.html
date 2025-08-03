@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ Image Upload Fixed!</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #218838; }
+        .image-preview { max-width: 300px; max-height: 300px; border: 2px solid #ddd; border-radius: 5px; margin: 10px 0; }
+        input[type="file"] { margin: 10px 0; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .test-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .test-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Image Upload Fixed Successfully!</h1>
+        
+        <div class="success">
+            <h3>✅ Problem Resolved</h3>
+            <p><strong>Original Error:</strong> "Data truncation: Data too long for column 'profile_picture'"</p>
+            <p><strong>Root Cause:</strong> Database column size was too small (BLOB instead of LONGBLOB)</p>
+            <p><strong>Solution Applied:</strong> Fixed both 'ProfilePicture' and 'profile_picture' columns to LONGBLOB</p>
+        </div>
+
+        <div class="section">
+            <h3>📤 Test Image Upload</h3>
+            <div>
+                <label>User ID: <input type="number" id="userId" value="19"></label><br>
+                <label>Choose Image: <input type="file" id="imageFile" accept="image/*"></label><br>
+                <button onclick="uploadImage()">Upload Image</button>
+                <button onclick="viewImage()">View Current Image</button>
+                <button onclick="getProfile()">Get Profile Info</button>
+            </div>
+            <div id="uploadResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>🖼️ Image Preview</h3>
+            <div id="imagePreview"></div>
+        </div>
+
+        <div class="section">
+            <h3>📋 Profile Information</h3>
+            <div id="profileInfo"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔧 Technical Details</h3>
+            <p><strong>Database Column Type:</strong> LONGBLOB (4GB max size)</p>
+            <p><strong>File Size Limit:</strong> 5MB (configured in backend)</p>
+            <p><strong>Supported Formats:</strong> All image formats (JPEG, PNG, GIF, etc.)</p>
+            <p><strong>API Endpoint:</strong> POST /api/profile/{userId}/image</p>
+        </div>
+    </div>
+
+    <script>
+        async function uploadImage() {
+            const resultDiv = document.getElementById('uploadResult');
+            const userId = document.getElementById('userId').value;
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                resultDiv.innerHTML = '<div class="test-error">❌ Please select an image file</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = `⏳ Uploading ${file.name} (${(file.size/1024).toFixed(1)} KB)...`;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`/api/profile/${userId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="test-success">✅ ${result.message}</div>`;
+                    viewImage(); // Auto-preview the uploaded image
+                } else {
+                    resultDiv.innerHTML = `<div class="test-error">❌ Upload failed: ${result.error || JSON.stringify(result)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function viewImage() {
+            const previewDiv = document.getElementById('imagePreview');
+            const userId = document.getElementById('userId').value;
+            
+            previewDiv.innerHTML = '⏳ Loading image...';
+            
+            try {
+                const response = await fetch(`/api/profile/${userId}/image`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    previewDiv.innerHTML = `
+                        <div class="test-success">
+                            ✅ Image loaded successfully!<br>
+                            Size: ${(blob.size/1024).toFixed(1)} KB<br>
+                            <img src="${imageUrl}" class="image-preview" alt="Profile Picture">
+                        </div>
+                    `;
+                } else {
+                    previewDiv.innerHTML = `<div class="test-error">❌ No image found for user ${userId}</div>`;
+                }
+            } catch (error) {
+                previewDiv.innerHTML = `<div class="test-error">❌ Error loading image: ${error.message}</div>`;
+            }
+        }
+
+        async function getProfile() {
+            const infoDiv = document.getElementById('profileInfo');
+            const userId = document.getElementById('userId').value;
+            
+            infoDiv.innerHTML = '⏳ Loading profile...';
+            
+            try {
+                const response = await fetch(`/api/profile/${userId}`);
+                const profile = await response.json();
+                
+                if (response.ok) {
+                    infoDiv.innerHTML = `
+                        <div class="test-success">
+                            <h4>Profile Data:</h4>
+                            <p><strong>User ID:</strong> ${profile.userId}</p>
+                            <p><strong>Profile ID:</strong> ${profile.profileId}</p>
+                            <p><strong>Has Profile Picture:</strong> ${profile.profilePicture ? 'Yes' : 'No'}</p>
+                            <p><strong>Picture File Name:</strong> ${profile.pictureFileName || 'None'}</p>
+                            <p><strong>Picture File Size:</strong> ${profile.pictureFileSize ? (profile.pictureFileSize/1024).toFixed(1) + ' KB' : 'None'}</p>
+                            <p><strong>Title:</strong> ${profile.title || 'None'}</p>
+                            <p><strong>Bio:</strong> ${profile.bio || 'None'}</p>
+                        </div>
+                    `;
+                } else {
+                    infoDiv.innerHTML = `<div class="test-error">❌ Failed to load profile: ${JSON.stringify(profile)}</div>`;
+                }
+            } catch (error) {
+                infoDiv.innerHTML = `<div class="test-error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-load image and profile on page load
+        window.onload = function() {
+            viewImage();
+            getProfile();
+        }
+    </script>
+</body>
+</html>

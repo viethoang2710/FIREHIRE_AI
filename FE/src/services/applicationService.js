@@ -1,0 +1,120 @@
+// src/services/applicationService.js
+import api from './api';
+
+const applicationService = {
+  // Lấy tất cả applications (for admin)
+  getAllApplications: async () => {
+    try {
+      const response = await api.get('/api/applications');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch all applications' };
+    }
+  },
+
+  // Nộp CV ứng tuyển
+  applyWithCV: async (jobId, candidateId, cvFile, coverLetter = '') => {
+    try {
+      const formData = new FormData();
+      formData.append('jobId', jobId);
+      formData.append('candidateId', candidateId);
+      formData.append('cvFile', cvFile);
+      if (coverLetter) {
+        formData.append('coverLetter', coverLetter);
+      }
+
+      const response = await api.post('/api/applications/apply-with-cv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to submit application' };
+    }
+  },
+
+  // Lấy danh sách CV đã nộp theo ứng viên
+  getApplicationsByCandidate: async (candidateId) => {
+    try {
+      const response = await api.get(`/api/applications/candidate/${candidateId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch applications' };
+    }
+  },
+
+  // Lấy danh sách CV đã nộp theo nhà tuyển dụng  
+  getApplicationsByEmployer: async (employerId) => {
+    try {
+      const response = await api.get(`/api/applications/employer/${employerId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch applications' };
+    }
+  },
+
+  // Lấy danh sách CV đã nộp theo job
+  getApplicationsByJob: async (jobId) => {
+    try {
+      const response = await api.get(`/api/applications/job/${jobId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch applications' };
+    }
+  },
+
+  // Cập nhật trạng thái đơn ứng tuyển (cho nhà tuyển dụng/admin)
+  updateApplicationStatus: async (applicationId, status) => {
+    try {
+      const response = await api.put(`/api/applications/${applicationId}/status`, null, {
+        params: { status }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update application status' };
+    }
+  },
+
+  // Shortlist ứng viên
+  shortlistApplication: async (applicationId) => {
+    try {
+      const response = await api.post(`/api/applications/${applicationId}/shortlist`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to shortlist application' };
+    }
+  },
+
+  // Từ chối ứng viên
+  rejectApplication: async (applicationId) => {
+    try {
+      const response = await api.post(`/api/applications/${applicationId}/reject`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to reject application' };
+    }
+  },
+
+  // Lên lịch phỏng vấn
+  scheduleInterview: async (applicationId) => {
+    try {
+      const response = await api.post(`/api/applications/${applicationId}/interview`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to schedule interview' };
+    }
+  },
+
+  // Xóa đơn ứng tuyển
+  deleteApplication: async (applicationId) => {
+    try {
+      const response = await api.delete(`/api/applications/${applicationId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete application' };
+    }
+  }
+};
+
+export default applicationService;

@@ -18,5 +18,6 @@ public class JobPostingRequest {
     private String skillsRequired;
     private String benefits;
     private String companyName;
+    private String companyLogo;
     private String status;
 }

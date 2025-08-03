@@ -11,6 +11,7 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\CVSkillTagController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\CVTemplateController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\CVViewLogController.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\DatabaseFixController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\DebugController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\EmployerController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\HealthController.java
@@ -19,9 +20,13 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\jwtService.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\RecruiterController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\SkillTagController.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\StatisticsController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\TestDataController.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\UserController.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\controller\UserProfileController.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\AdminStatsResponse.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\AIModelStatusResponse.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\ApplicationSummaryDTO.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\ApplyJobRequest.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\AuthRequest.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\ChatbotRequest.java
@@ -56,7 +61,10 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\JobPostingDTO.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\LoginResponse.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\SkillTagDTO.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\StatisticsDTO.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\UserDTO.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\UserProfileDTO.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\UserProfileUpdateRequest.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\Application.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\CV.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\CVAnalysis.java
@@ -68,6 +76,7 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\JobPosting.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\SkillTag.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\User.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\UserProfile.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\entity\UserRoleConverter.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\FireHireAiApplication.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\model\CVSection.java
@@ -85,6 +94,7 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\repository\EmployerRepository.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\repository\JobPostingRepository.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\repository\SkillTagRepository.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\repository\UserProfileRepository.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\repository\UserRepository.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\security\config\SecurityConfig.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\security\jwt\JwtAuthenticationEntryPoint.java
@@ -107,4 +117,6 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\service\JobPostingService.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\service\JobSearchService.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\service\SkillTagService.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\service\StatisticsService.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\service\UserProfileService.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\service\UserService.java

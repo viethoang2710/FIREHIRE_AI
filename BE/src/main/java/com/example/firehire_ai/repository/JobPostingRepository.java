@@ -117,4 +117,12 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Integer>
         @Query("SELECT j FROM JobPosting j WHERE j.expiryDate BETWEEN :startDate AND :endDate AND j.status = 'ACTIVE'")
         List<JobPosting> findExpiringJobs(@Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
+
+        // Statistics methods
+        Long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+        Long countByCreatedAtBetweenAndStatus(LocalDateTime startDate, LocalDateTime endDate, String status);
+
+        @Query("SELECT j.industry, COUNT(j) FROM JobPosting j GROUP BY j.industry ORDER BY COUNT(j) DESC")
+        List<Object[]> findCategoryDistribution();
 }

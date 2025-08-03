@@ -31,6 +31,9 @@ public class JobPosting {
     @Column(name = "CompanyName", length = 255) // Cột mới được thêm vào database
     private String companyName;
 
+    @Column(name = "CompanyLogo", columnDefinition = "LONGTEXT") // Cột mới cho logo công ty (base64)
+    private String companyLogo;
+
     @Column(name = "Description", columnDefinition = "TEXT")
     private String description;
 

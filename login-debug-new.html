@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin: 5px; }
+        input { margin: 10px; padding: 10px; width: 300px; display: block; }
+        #log { background: #f5f5f5; padding: 10px; height: 400px; overflow-y: auto; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Login Debug Test</h1>
+    
+    <div class="section">
+        <h3>Test Login</h3>
+        <input type="email" id="email" placeholder="Email" value="test@example.com">
+        <input type="password" id="password" placeholder="Password" value="password123">
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="checkBackend()">Check Backend</button>
+        <button onclick="testRegister()">Test Register</button>
+    </div>
+
+    <div class="section">
+        <h3>Quick Database Check</h3>
+        <button onclick="checkUsers()">Check Users in Database</button>
+        <button onclick="testUserAPI()">Test User API</button>
+    </div>
+
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="log"></div>
+        <button onclick="clearLog()">Clear</button>
+    </div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<span class="${className}">[${new Date().toLocaleTimeString()}] ${msg}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function checkBackend() {
+            log('Checking backend status...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'OPTIONS'
+                });
+                log(`Backend CORS check: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                // Test a simple GET endpoint
+                const getResponse = await fetch('http://localhost:8080/api/users');
+                log(`Users API: ${getResponse.status}`, getResponse.ok ? 'success' : 'error');
+                
+            } catch (error) {
+                log('Backend connection error: ' + error.message, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            log('=== TESTING LOGIN ===', 'info');
+            log(`Email: ${email}`, 'info');
+            log(`Password: ${'*'.repeat(password.length)}`, 'info');
+
+            const loginData = {
+                email: email,
+                password: password
+            };
+
+            try {
+                log('Sending login request...', 'info');
+                
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const responseText = await response.text();
+                log(`Response body: ${responseText}`, 'info');
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        log('LOGIN SUCCESS!', 'success');
+                        log('User data: ' + JSON.stringify(data, null, 2), 'success');
+                    } catch (e) {
+                        log('Login successful but response is not JSON: ' + responseText, 'success');
+                    }
+                } else {
+                    log(`Login failed with status ${response.status}`, 'error');
+                    
+                    if (response.status === 401) {
+                        log('ERROR: Invalid email or password', 'error');
+                    } else if (response.status === 400) {
+                        log('ERROR: Bad request - check email/password format', 'error');
+                    } else if (response.status === 500) {
+                        log('ERROR: Server error', 'error');
+                    }
+                }
+
+            } catch (error) {
+                log('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function testRegister() {
+            log('=== TESTING REGISTER ===', 'info');
+            
+            const registerData = {
+                fullName: "Test User",
+                email: "test@example.com",
+                password: "password123",
+                phoneNumber: "1234567890"
+            };
+
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/register/candidate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(registerData)
+                });
+
+                log(`Register response: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const responseText = await response.text();
+                log(`Register body: ${responseText}`, 'info');
+
+            } catch (error) {
+                log('Register error: ' + error.message, 'error');
+            }
+        }
+
+        async function checkUsers() {
+            log('=== CHECKING USERS IN DATABASE ===', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/users');
+                log(`Users API response: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    log(`Found ${users.length} users in database`, 'success');
+                    
+                    users.forEach((user, index) => {
+                        log(`User ${index + 1}: ${user.email} (${user.role}) - ID: ${user.id}`, 'info');
+                    });
+                } else {
+                    log('Could not fetch users', 'error');
+                }
+                
+            } catch (error) {
+                log('Error checking users: ' + error.message, 'error');
+            }
+        }
+
+        async function testUserAPI() {
+            log('=== TESTING USER API ENDPOINTS ===', 'info');
+            
+            try {
+                // Test User ID 19 specifically
+                const response = await fetch('http://localhost:8080/api/users/19');
+                log(`User 19 API: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    log(`User 19 data: ${JSON.stringify(user)}`, 'success');
+                } else {
+                    log('User 19 not found', 'error');
+                }
+                
+            } catch (error) {
+                log('User API error: ' + error.message, 'error');
+            }
+        }
+
+        // Auto-check backend on page load
+        window.onload = function() {
+            log('Login debug page loaded. Click "Check Backend" first.', 'info');
+        };
+    </script>
+</body>
+</html>

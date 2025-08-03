@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CV API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result-box {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error-box {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+        .success-box {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #3c3;
+        }
+        .test-button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #005a87;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test CV API Endpoint</h1>
+        <p>Debug tool để test API lấy danh sách CV của user</p>
+        
+        <div class="form-group">
+            <label for="userId">User ID:</label>
+            <input type="number" id="userId" value="19" placeholder="Nhập User ID">
+        </div>
+        
+        <div class="form-group">
+            <button class="test-button" onclick="testGetUserCVs()">📋 Test Get User CVs</button>
+            <button class="test-button" onclick="testServerStatus()">🌐 Test Server Status</button>
+            <button class="test-button" onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error-box' : type === 'success' ? 'success-box' : 'result-box';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `result-box ${className}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            results.appendChild(logEntry);
+            logEntry.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testServerStatus() {
+            log('🔄 Kiểm tra trạng thái server...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Server đang hoạt động: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    log(`❌ Server response error: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`💥 Không thể kết nối server: ${error.message}`, 'error');
+                log('💡 Hãy kiểm tra xem Spring Boot server đã khởi động chưa?', 'info');
+            }
+        }
+        
+        async function testGetUserCVs() {
+            const userId = document.getElementById('userId').value;
+            
+            if (!userId) {
+                log('❌ Vui lòng nhập User ID', 'error');
+                return;
+            }
+            
+            log(`🔄 Testing GET /api/cv/user/${userId}...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/cv/user/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`📡 Response Status: ${response.status} ${response.statusText}`, 'info');
+                log(`📡 Response Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ API Response:`, 'success');
+                    log(JSON.stringify(data, null, 2), 'success');
+                    
+                    // Analyze response data
+                    if (data.success && data.data) {
+                        log(`📊 Analysis: Found ${data.data.length} CV(s)`, 'info');
+                        
+                        data.data.forEach((cv, index) => {
+                            log(`CV ${index + 1}:`, 'info');
+                            log(`  - ID: ${cv.cvId}`, 'info');
+                            log(`  - Title: ${cv.title || 'N/A'}`, 'info');
+                            log(`  - FileName: ${cv.fileName || 'N/A'}`, 'info');
+                            log(`  - FileSize: ${cv.fileSize || 'N/A'}`, 'info');
+                            log(`  - CoverLetter: ${cv.coverLetter || 'N/A'}`, 'info');
+                            log(`  - Job: ${cv.job ? JSON.stringify(cv.job) : 'N/A'}`, 'info');
+                            log(`  - CreatedAt: ${cv.createdAt || 'N/A'}`, 'info');
+                        });
+                    } else {
+                        log(`❌ Response structure issue: success=${data.success}, data=${data.data}`, 'error');
+                    }
+                    
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ API Error: ${errorText}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`💥 Request failed: ${error.message}`, 'error');
+                log('💡 Hãy kiểm tra:', 'info');
+                log('  - Spring Boot server đã khởi động?', 'info');
+                log('  - CORS settings đã đúng?', 'info');
+                log('  - Database connection OK?', 'info');
+            }
+        }
+        
+        // Auto test server status on load
+        window.onload = function() {
+            log('🚀 CV API Test Tool initialized', 'info');
+            testServerStatus();
+        };
+    </script>
+</body>
+</html>
