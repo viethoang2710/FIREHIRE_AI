@@ -39,6 +39,12 @@ public class CVController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/job/{jobId}")
+    public ResponseEntity<ApiResponse<List<CVDTO>>> getCVsByJobId(@PathVariable Integer jobId) {
+        ApiResponse<List<CVDTO>> response = cvService.getCVsByJobId(jobId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{cvId}")
     public ResponseEntity<ApiResponse<CVDTO>> getCVById(@PathVariable Integer cvId) {
         ApiResponse<CVDTO> response = cvService.getCVById(cvId);
@@ -111,6 +117,24 @@ public class CVController {
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PatchMapping("/{cvId}/status")
+    public ResponseEntity<ApiResponse<String>> updateApplicantStatus(
+            @PathVariable Integer cvId,
+            @RequestParam Integer jobId,
+            @RequestParam String status) {
+        try {
+            ApiResponse<String> response = cvService.updateApplicantStatus(cvId, jobId, status);
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    new ApiResponse<>(false, "Không thể cập nhật trạng thái: " + e.getMessage(), null));
         }
     }
 }

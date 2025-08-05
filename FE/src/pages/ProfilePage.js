@@ -170,7 +170,7 @@ const ProfilePage = ({ showAlert }) => {
         calculateStats([]);
       }
     } catch (error) {
-      console.error('� Error loading CVs:', error.message);
+      console.error('🚨 Error loading CVs:', error.message);
       console.error('🔍 Error details:', error);
       console.error('🔍 Error stack:', error.stack);
       

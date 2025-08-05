@@ -35,6 +35,6 @@ public class Application {
     private ApplicationStatus status = ApplicationStatus.pending;
 
     public enum ApplicationStatus {
-        pending, viewed, rejected, accepted
+        pending, viewed, interview, rejected, accepted
     }
 }

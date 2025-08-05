@@ -770,50 +770,81 @@ const getJobDetails = async (jobId) => {
 
 // ===== QUẢN LÝ ỨNG VIÊN =====
 /**
- * Lấy danh sách ứng viên cho một tin tuyển dụng
+ * Lấy danh sách ứng viên cho một tin tuyển dụng từ bảng CVs theo JobID
  * @param {Number} jobId - ID của tin tuyển dụng
  */
 const getApplicants = async (jobId) => {
   try {
-    const response = await axios.get(`${API_URL}/jobs/${jobId}/applicants`, getAuthHeader());
-    return response.data;
+    console.log(`Đang lấy danh sách CV cho Job ID: ${jobId}`);
+    const response = await axios.get(`${API_URL}/cv/job/${jobId}`, getAuthHeader());
+    
+    // API trả về ApiResponse<List<CVDTO>>
+    if (response.data && response.data.success && response.data.data) {
+      return response.data.data; // Lấy mảng CVDTO từ data field
+    } else {
+      console.log('API response structure:', response.data);
+      return response.data || []; // Fallback nếu structure khác
+    }
   } catch (error) {
-    console.error(`Error fetching applicants for job #${jobId}:`, error);
+    console.error(`Error fetching CVs for job #${jobId}:`, error);
     throw error;
+  }
+};
+
+/**
+ * Lấy số lượng CV ứng viên cho một tin tuyển dụng
+ * @param {Number} jobId - ID của tin tuyển dụng
+ */
+const getCVCount = async (jobId) => {
+  try {
+    const cvList = await getApplicants(jobId);
+    return Array.isArray(cvList) ? cvList.length : 0;
+  } catch (error) {
+    console.error(`Error getting CV count for job #${jobId}:`, error);
+    return 0; // Return 0 if error
   }
 };
 
 /**
  * Cập nhật trạng thái của ứng viên
  * @param {Number} jobId - ID của tin tuyển dụng
- * @param {Number} applicantId - ID của ứng viên
+ * @param {Number} cvId - ID của CV (thay vì applicantId)
  * @param {String} newStatus - Trạng thái mới
  */
-const updateApplicantStatus = async (jobId, applicantId, newStatus) => {
+const updateApplicantStatus = async (jobId, cvId, newStatus) => {
   try {
+    console.log(`Cập nhật trạng thái CV ID: ${cvId} cho Job ID: ${jobId} thành: ${newStatus}`);
+    
     const response = await axios.patch(
-      `${API_URL}/jobs/${jobId}/applicants/${applicantId}`, 
-      { status: newStatus }, 
+      `${API_URL}/cv/${cvId}/status?jobId=${jobId}&status=${encodeURIComponent(newStatus)}`, 
+      {}, // Empty body since we use query params
       getAuthHeader()
     );
-    return response.data;
+    
+    if (response.data && response.data.success) {
+      console.log('Cập nhật trạng thái thành công:', response.data);
+      return response.data;
+    } else {
+      throw new Error(response.data?.message || 'Cập nhật trạng thái thất bại');
+    }
   } catch (error) {
-    console.error(`Error updating applicant #${applicantId} status:`, error);
+    console.error(`Error updating CV #${cvId} status:`, error);
     throw error;
   }
 };
 
 /**
- * Tải CV của ứng viên
- * @param {Number} jobId - ID của tin tuyển dụng
- * @param {Number} applicantId - ID của ứng viên
+ * Tải CV của ứng viên từ database theo CVID
+ * @param {Number} jobId - ID của tin tuyển dụng (để tham chiếu)
+ * @param {Number} cvId - ID của CV (CVID từ bảng CVs)
  */
-const downloadCV = async (jobId, applicantId) => {
+const downloadCV = async (jobId, cvId) => {
   try {
-    // Trong trường hợp thực tế, bạn sẽ cần xử lý việc tải file
-    // Đây là một mẫu đơn giản để lấy URL của CV
+    console.log(`Đang tải CV ID: ${cvId} cho Job ID: ${jobId}`);
+    
+    // Gọi API để lấy file CV từ database
     const response = await axios.get(
-      `${API_URL}/jobs/${jobId}/applicants/${applicantId}/cv`, 
+      `${API_URL}/cv/${cvId}/download`, 
       {
         ...getAuthHeader(),
         responseType: 'blob' // Quan trọng: để xử lý tải file
@@ -829,11 +860,11 @@ const downloadCV = async (jobId, applicantId) => {
     
     // Lấy tên file từ header hoặc sử dụng tên mặc định
     const contentDisposition = response.headers['content-disposition'];
-    let filename = 'cv.pdf'; // Mặc định
+    let filename = `CV_${cvId}.pdf`; // Mặc định
     
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-      if (filenameMatch.length === 2) {
+      if (filenameMatch && filenameMatch.length === 2) {
         filename = filenameMatch[1];
       }
     }
@@ -843,10 +874,21 @@ const downloadCV = async (jobId, applicantId) => {
     link.click();
     link.remove();
     
+    // Cleanup URL
+    window.URL.revokeObjectURL(url);
+    
     return url; // Trả về URL nếu cần
   } catch (error) {
-    console.error(`Error downloading CV for applicant #${applicantId}:`, error);
-    throw error;
+    console.error(`Error downloading CV #${cvId}:`, error);
+    
+    // Fallback: Nếu API không hoạt động, hiển thị thông báo
+    if (error.response && error.response.status === 404) {
+      throw new Error('CV không tồn tại hoặc đã bị xóa');
+    } else if (error.response && error.response.status === 403) {
+      throw new Error('Bạn không có quyền tải CV này');
+    } else {
+      throw new Error('Không thể tải CV. Vui lòng thử lại sau.');
+    }
   }
 };
 
@@ -857,6 +899,7 @@ const recruiterService = {
   deleteJob,
   getJobDetails,
   getApplicants,
+  getCVCount,
   updateApplicantStatus,
   downloadCV,
   uploadCompanyLogo

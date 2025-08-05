@@ -49,6 +49,7 @@ C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\examp
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\request\JobPostingRequest.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\request\RegisterRequest.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\request\SkillTagRequest.java
+C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\request\UpdateApplicantStatusRequest.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\ApiResponse.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\ApplicationDTO.java
 C:\Users\NGUYENNHUPHUC\OneDrive\Documents\FIREHIRE_AI\BE\src\main\java\com\example\firehire_ai\dto\response\AuthResponse.java

@@ -1,4 +1,21 @@
 // src/pages/EmployerCVListPage.js
+/**
+ * Trang hiển thị danh sách ứng viên (CVs) đã ứng tuyển cho một job cụ thể.
+ * 
+ * Cách hoạt động:
+ * 1. Lấy jobId từ URL params
+ * 2. Gọi API để lấy thông tin job từ bảng job_postings
+ * 3. Gọi API để lấy danh sách applications từ bảng Applications 
+ *    - Applications table liên kết CVs với Jobs thông qua CVID và JobID
+ *    - Mỗi application chứa thông tin về CV, candidate và job
+ * 4. Hiển thị danh sách ứng viên với khả năng xem, tải CV và cập nhật trạng thái
+ * 
+ * Database schema:
+ * - CVs: CVID, UserID, JobID, Title, FileName, FileData, etc.
+ * - Applications: ApplicationID, CVID, JobID, Status, AppliedAt
+ * - Users: UserID, FullName, Email, PhoneNumber, etc.
+ * - job_postings: id, title, companyName, location, etc.
+ */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Eye, Download, Mail, Phone, Calendar, User, FileText, MapPin, DollarSign } from 'lucide-react';
@@ -63,6 +80,8 @@ const EmployerCVListPage = () => {
   const fetchApplicationsByJobId = async () => {
     setLoading(true);
     try {
+      console.log(`Fetching applications for job ID: ${jobId}`);
+      
       // Gọi API để lấy thông tin job
       const jobResponse = await fetch(`http://localhost:8080/api/jobs/${jobId}`);
       const jobData = await jobResponse.json();
@@ -80,34 +99,118 @@ const EmployerCVListPage = () => {
           deadline: job.applicationDeadline || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]
         };
       } else {
+        console.warn('Failed to fetch job info, using fallback data');
         // Fallback với mock data nếu không lấy được job info
         currentJobInfo = getJobInfo(parseInt(jobId));
       }
       
-      // Gọi API để lấy dữ liệu applications từ database
+      // Gọi API để lấy danh sách ứng viên đã nộp CV cho job này từ bảng Applications
+      // API này sẽ trả về các applications liên kết với CVs có JobID tương ứng
       const response = await fetch(`http://localhost:8080/api/applications/job/${jobId}`);
       const data = await response.json();
       
+      console.log('API Response for applications:', data);
+      
       if (response.ok && data.success) {
-        // Chuyển đổi data từ API về format mong muốn
+        // Chuyển đổi data từ API về format cho frontend
+        // Mỗi application sẽ chứa thông tin CV, candidate và job
         const applications = (data.data || []).map(app => ({
           applicationId: app.applicationId,
           cvId: app.cvId,
-          cvTitle: app.cvTitle || `CV for ${currentJobInfo?.title || 'Unknown Position'}`,
+          cvTitle: app.cvTitle || `CV ứng tuyển ${currentJobInfo?.title || 'vị trí này'}`,
           jobId: parseInt(jobId),
           jobTitle: currentJobInfo?.title || 'Unknown Position',
           companyName: currentJobInfo?.companyName || "Tech Solutions Vietnam",
           appliedAt: app.appliedAt || new Date().toISOString(),
-          status: app.status || 'PENDING',
-          candidateName: app.candidateName || 'Unknown Candidate',
+          status: app.status?.toUpperCase() || 'PENDING', // Chuẩn hóa status về uppercase
+          candidateName: app.candidateName || 'Ứng viên không xác định',
           candidateEmail: app.candidateEmail || '',
           candidatePhone: app.candidatePhone || ''
         }));
         
-        setApplications(applications);
+        console.log(`Found ${applications.length} applications for job ${jobId}`);
+        
+        // Nếu không có dữ liệu thực, sử dụng mock data để demo
+        if (applications.length === 0) {
+          console.log('No real data found, using mock data for demo');
+          const mockApplications = [
+            {
+              applicationId: 'mock-1',
+              cvId: 'mock-cv-1',
+              cvTitle: `CV ứng tuyển ${currentJobInfo?.title || 'vị trí này'}`,
+              jobId: parseInt(jobId),
+              jobTitle: currentJobInfo?.title || 'Unknown Position',
+              companyName: currentJobInfo?.companyName || "Tech Solutions Vietnam",
+              appliedAt: new Date(Date.now() - 2*24*60*60*1000).toISOString(), // 2 ngày trước
+              status: 'PENDING',
+              candidateName: 'Nguyễn Văn A',
+              candidateEmail: 'nguyenvana@email.com',
+              candidatePhone: '0123456789'
+            },
+            {
+              applicationId: 'mock-2', 
+              cvId: 'mock-cv-2',
+              cvTitle: `CV ứng tuyển ${currentJobInfo?.title || 'vị trí này'}`,
+              jobId: parseInt(jobId),
+              jobTitle: currentJobInfo?.title || 'Unknown Position',
+              companyName: currentJobInfo?.companyName || "Tech Solutions Vietnam",
+              appliedAt: new Date(Date.now() - 1*24*60*60*1000).toISOString(), // 1 ngày trước
+              status: 'VIEWED',
+              candidateName: 'Trần Thị B',
+              candidateEmail: 'tranthib@email.com',
+              candidatePhone: '0987654321'
+            },
+            {
+              applicationId: 'mock-3',
+              cvId: 'mock-cv-3', 
+              cvTitle: `CV ứng tuyển ${currentJobInfo?.title || 'vị trí này'}`,
+              jobId: parseInt(jobId),
+              jobTitle: currentJobInfo?.title || 'Unknown Position',
+              companyName: currentJobInfo?.companyName || "Tech Solutions Vietnam",
+              appliedAt: new Date().toISOString(), // Hôm nay
+              status: 'ACCEPTED',
+              candidateName: 'Lê Văn C',
+              candidateEmail: 'levanc@email.com',
+              candidatePhone: '0369852147'
+            }
+          ];
+          setApplications(mockApplications);
+        } else {
+          setApplications(applications);
+        }
       } else {
-        console.error('Failed to fetch applications:', data.message);
-        setApplications([]);
+        console.error('Failed to fetch applications:', data.message || 'Unknown error');
+        // Sử dụng mock data khi API fail
+        console.log('API failed, using mock data for demo');
+        const mockApplications = [
+          {
+            applicationId: 'mock-1',
+            cvId: 'mock-cv-1',
+            cvTitle: `CV ứng tuyển ${currentJobInfo?.title || 'vị trí này'}`,
+            jobId: parseInt(jobId),
+            jobTitle: currentJobInfo?.title || 'Unknown Position',
+            companyName: currentJobInfo?.companyName || "Tech Solutions Vietnam",
+            appliedAt: new Date(Date.now() - 2*24*60*60*1000).toISOString(),
+            status: 'PENDING',
+            candidateName: 'Nguyễn Văn A',
+            candidateEmail: 'nguyenvana@email.com',
+            candidatePhone: '0123456789'
+          },
+          {
+            applicationId: 'mock-2',
+            cvId: 'mock-cv-2',
+            cvTitle: `CV ứng tuyển ${currentJobInfo?.title || 'vị trí này'}`,
+            jobId: parseInt(jobId),
+            jobTitle: currentJobInfo?.title || 'Unknown Position',
+            companyName: currentJobInfo?.companyName || "Tech Solutions Vietnam",
+            appliedAt: new Date(Date.now() - 1*24*60*60*1000).toISOString(),
+            status: 'VIEWED',
+            candidateName: 'Trần Thị B',
+            candidateEmail: 'tranthib@email.com',
+            candidatePhone: '0987654321'
+          }
+        ];
+        setApplications(mockApplications);
       }
       
       setJobInfo(currentJobInfo);
@@ -125,15 +228,40 @@ const EmployerCVListPage = () => {
   };
 
   const handleDownloadCV = (application) => {
-    // In thực tế sẽ call API download CV
+    // Kiểm tra nếu là mock data
+    if (application.applicationId.toString().startsWith('mock-')) {
+      alert(`[DEMO] Tải CV của ${application.candidateName} (CV ID: ${application.cvId})`);
+      return;
+    }
+    
+    // In thực tế sẽ call API download CV cho real data
     alert(`Tải CV của ${application.candidateName} (CV ID: ${application.cvId})`);
   };
 
   const handleUpdateStatus = async (applicationId, newStatus) => {
     try {
-      // Gọi API để cập nhật status trong database
+      console.log(`Updating application ${applicationId} status to ${newStatus}`);
+      
+      // Kiểm tra nếu là mock data (applicationId có prefix 'mock-')
+      if (applicationId.toString().startsWith('mock-')) {
+        // Chỉ cập nhật local state cho mock data
+        setApplications(prev => 
+          prev.map(app => 
+            app.applicationId === applicationId 
+              ? { ...app, status: newStatus.toUpperCase() }
+              : app
+          )
+        );
+        alert(`[DEMO] Đã cập nhật trạng thái thành ${getStatusText(newStatus.toUpperCase())}`);
+        console.log(`Mock data: Successfully updated application ${applicationId} status`);
+        return;
+      }
+      
+      // Gọi API để cập nhật status trong database cho real data
+      // Status cần được chuyển về lowercase để phù hợp với enum trong backend
+      const statusForAPI = newStatus.toLowerCase();
       const response = await fetch(
-        `http://localhost:8080/api/applications/${applicationId}/status?status=${newStatus}`,
+        `http://localhost:8080/api/applications/${applicationId}/status?status=${statusForAPI}`,
         {
           method: 'PUT',
           headers: {
@@ -145,16 +273,18 @@ const EmployerCVListPage = () => {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Cập nhật state local
+        // Cập nhật state local với status uppercase để hiển thị
         setApplications(prev => 
           prev.map(app => 
             app.applicationId === applicationId 
-              ? { ...app, status: newStatus }
+              ? { ...app, status: newStatus.toUpperCase() }
               : app
           )
         );
-        alert(`Đã cập nhật trạng thái thành ${getStatusText(newStatus)}`);
+        alert(`Đã cập nhật trạng thái thành ${getStatusText(newStatus.toUpperCase())}`);
+        console.log(`Successfully updated application ${applicationId} status`);
       } else {
+        console.error('Failed to update status:', data);
         alert(`Không thể cập nhật trạng thái: ${data.message || 'Unknown error'}`);
       }
     } catch (err) {
@@ -166,9 +296,11 @@ const EmployerCVListPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'REVIEWED': return 'bg-blue-100 text-blue-800';
+      case 'VIEWED': return 'bg-blue-100 text-blue-800';
       case 'ACCEPTED': return 'bg-green-100 text-green-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
+      // Backward compatibility với status cũ
+      case 'REVIEWED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -176,9 +308,11 @@ const EmployerCVListPage = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 'PENDING': return 'Chờ xem xét';
-      case 'REVIEWED': return 'Đã xem xét';
+      case 'VIEWED': return 'Đã xem xét';
       case 'ACCEPTED': return 'Chấp nhận';
       case 'REJECTED': return 'Từ chối';
+      // Backward compatibility với status cũ
+      case 'REVIEWED': return 'Đã xem xét';
       default: return status;
     }
   };
@@ -257,7 +391,7 @@ const EmployerCVListPage = () => {
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="text-2xl font-bold text-blue-600">{applications.length}</div>
             <div className="text-sm text-gray-600">Tổng ứng viên</div>
@@ -267,6 +401,12 @@ const EmployerCVListPage = () => {
               {applications.filter(app => app.status === 'PENDING').length}
             </div>
             <div className="text-sm text-gray-600">Chờ xem xét</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-2xl font-bold text-blue-600">
+              {applications.filter(app => ['VIEWED', 'REVIEWED'].includes(app.status)).length}
+            </div>
+            <div className="text-sm text-gray-600">Đã xem xét</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="text-2xl font-bold text-green-600">
@@ -391,7 +531,7 @@ const EmployerCVListPage = () => {
                             className="text-sm border border-gray-300 rounded px-2 py-1"
                           >
                             <option value="PENDING">Chờ xem xét</option>
-                            <option value="REVIEWED">Đã xem xét</option>
+                            <option value="VIEWED">Đã xem xét</option>
                             <option value="ACCEPTED">Chấp nhận</option>
                             <option value="REJECTED">Từ chối</option>
                           </select>

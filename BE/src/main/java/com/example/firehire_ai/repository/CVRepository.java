@@ -10,6 +10,8 @@ import java.util.List;
 public interface CVRepository extends JpaRepository<CV, Integer> {
     List<CV> findByUser_Id(Integer userId);
 
+    List<CV> findByJob_Id(Integer jobId);
+
     @Query("SELECT c FROM CV c " +
             "LEFT JOIN FETCH c.user " +
             "LEFT JOIN FETCH c.template " +

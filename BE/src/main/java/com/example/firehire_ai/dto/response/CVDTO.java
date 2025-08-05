@@ -35,24 +35,32 @@ public class CVDTO {
     // Job information
     private JobPostingDTO job;
 
+    // Candidate information (for employer view)
+    private String candidateName;
+    private String candidateEmail;
+    private String candidatePhone;
+
+    // Application status (for employer view)
+    private String status;
+
     public static CVDTO fromEntity(CV cv) {
         if (cv == null)
             return null;
 
-        List<CVSectionDTO> sectionDTOs = cv.getSections().stream()
+        List<CVSectionDTO> sectionDTOs = cv.getSections() != null ? cv.getSections().stream()
                 .map(CVSectionDTO::fromEntity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : List.of();
 
-        List<String> skillTagNames = cv.getSkillTags().stream()
+        List<String> skillTagNames = cv.getSkillTags() != null ? cv.getSkillTags().stream()
                 .map(skillTag -> skillTag.getSkill().getName())
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : List.of();
 
         return CVDTO.builder()
                 .cvId(cv.getCvId())
-                .userId(cv.getUser().getId())
-                .userFullName(cv.getUser().getFullName())
-                .templateId(cv.getTemplate().getTemplateId())
-                .templateName(cv.getTemplate().getName())
+                .userId(cv.getUser() != null ? cv.getUser().getId() : null)
+                .userFullName(cv.getUser() != null ? cv.getUser().getFullName() : null)
+                .templateId(cv.getTemplate() != null ? cv.getTemplate().getTemplateId() : null)
+                .templateName(cv.getTemplate() != null ? cv.getTemplate().getName() : null)
                 .title(cv.getTitle())
                 .createdAt(cv.getCreatedAt())
                 .updatedAt(cv.getUpdatedAt())

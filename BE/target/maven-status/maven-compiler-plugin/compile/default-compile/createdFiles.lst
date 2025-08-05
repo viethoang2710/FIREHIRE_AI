@@ -119,6 +119,7 @@ com\example\firehire_ai\dto\response\CVDTO.class
 com\example\firehire_ai\dto\response\StatisticsDTO$ApplicationStatsData.class
 com\example\firehire_ai\repository\JobPostingRepository.class
 com\example\firehire_ai\model\CVSection$SectionType.class
+com\example\firehire_ai\dto\request\UpdateApplicantStatusRequest.class
 com\example\firehire_ai\dto\response\ApplicationDTO$ApplicationDTOBuilder.class
 com\example\firehire_ai\dto\response\StatisticsDTO$StatisticsDTOBuilder.class
 com\example\firehire_ai\entity\CV$CVBuilder.class
@@ -134,6 +135,7 @@ com\example\firehire_ai\dto\UserProfileUpdateRequest.class
 com\example\firehire_ai\dto\response\StatisticsDTO$UserGrowthPoint.class
 com\example\firehire_ai\dto\ApplyJobRequest.class
 com\example\firehire_ai\model\SkillTag$SkillTagBuilder.class
+com\example\firehire_ai\service\CVService$1.class
 com\example\firehire_ai\service\CVAnalysisService$CVAnalysisResult.class
 com\example\firehire_ai\dto\response\EmployerDTO.class
 com\example\firehire_ai\entity\User.class

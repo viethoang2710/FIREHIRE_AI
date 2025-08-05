@@ -10,6 +10,8 @@ import com.example.firehire_ai.entity.User;
 import com.example.firehire_ai.repository.CVRepository;
 import com.example.firehire_ai.repository.CVTemplateRepository;
 import com.example.firehire_ai.repository.UserRepository;
+import com.example.firehire_ai.repository.ApplicationRepository;
+import com.example.firehire_ai.repository.JobPostingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,12 @@ public class CVService {
 
     @Autowired
     private com.example.firehire_ai.repository.CVSectionRepository cvSectionRepository;
+
+    @Autowired
+    private ApplicationRepository applicationRepository;
+
+    @Autowired
+    private JobPostingRepository jobPostingRepository;
 
     public ApiResponse<CVDTO> createCV(CVCreateRequest request) {
         try {
@@ -97,6 +105,46 @@ public class CVService {
         } catch (Exception e) {
             e.printStackTrace(); // Log the full stack trace
             return ApiResponse.error("Failed to retrieve CVs: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<List<CVDTO>> getCVsByJobId(Integer jobId) {
+        try {
+            // Lấy tất cả CVs có JobID trùng với jobId được yêu cầu
+            List<CV> cvs = cvRepository.findByJob_Id(jobId);
+
+            List<CVDTO> cvDTOs = cvs.stream()
+                    .map(cv -> {
+                        CVDTO dto = CVDTO.fromEntity(cv);
+                        // Thêm thông tin candidate từ user
+                        if (cv.getUser() != null) {
+                            dto.setCandidateName(cv.getUser().getFullName());
+                            dto.setCandidateEmail(cv.getUser().getEmail());
+                            dto.setCandidatePhone(cv.getUser().getPhoneNumber());
+                        }
+
+                        // Lấy trạng thái từ bảng Applications
+                        List<com.example.firehire_ai.entity.Application> applications = applicationRepository
+                                .findByCv_CvIdAndJob_Id(cv.getCvId(), jobId);
+
+                        if (!applications.isEmpty()) {
+                            // Nếu có application, lấy trạng thái
+                            com.example.firehire_ai.entity.Application.ApplicationStatus status = applications.get(0)
+                                    .getStatus();
+                            dto.setStatus(convertStatusToVietnamese(status));
+                        } else {
+                            // Mặc định nếu chưa có application
+                            dto.setStatus("Mới");
+                        }
+
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+
+            return ApiResponse.success("CVs for job " + jobId + " retrieved successfully", cvDTOs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error("Failed to retrieve CVs for job: " + e.getMessage());
         }
     }
 
@@ -202,6 +250,80 @@ public class CVService {
             return content.getBytes();
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate DOCX", e);
+        }
+    }
+
+    public ApiResponse<String> updateApplicantStatus(Integer cvId, Integer jobId, String status) {
+        try {
+            // Tìm Application bằng cvId và jobId
+            List<com.example.firehire_ai.entity.Application> applications = applicationRepository
+                    .findByCv_CvIdAndJob_Id(cvId, jobId);
+
+            if (applications.isEmpty()) {
+                // Nếu chưa có Application, tạo mới
+                CV cv = cvRepository.findById(cvId)
+                        .orElseThrow(() -> new RuntimeException("CV không tồn tại"));
+
+                com.example.firehire_ai.entity.JobPosting job = jobPostingRepository.findById(jobId)
+                        .orElseThrow(() -> new RuntimeException("Job không tồn tại"));
+
+                com.example.firehire_ai.entity.Application newApplication = com.example.firehire_ai.entity.Application
+                        .builder()
+                        .cv(cv)
+                        .job(job)
+                        .status(parseStatus(status))
+                        .build();
+
+                applicationRepository.save(newApplication);
+                return new ApiResponse<>(true, "Đã tạo và cập nhật trạng thái thành công", status);
+            } else {
+                // Cập nhật trạng thái của Application đầu tiên
+                com.example.firehire_ai.entity.Application application = applications.get(0);
+                application.setStatus(parseStatus(status));
+                applicationRepository.save(application);
+                return new ApiResponse<>(true, "Đã cập nhật trạng thái thành công", status);
+            }
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi khi cập nhật trạng thái: " + e.getMessage(), null);
+        }
+    }
+
+    private com.example.firehire_ai.entity.Application.ApplicationStatus parseStatus(String status) {
+        switch (status.toLowerCase()) {
+            case "mới":
+            case "pending":
+                return com.example.firehire_ai.entity.Application.ApplicationStatus.pending;
+            case "đã xem":
+            case "viewed":
+                return com.example.firehire_ai.entity.Application.ApplicationStatus.viewed;
+            case "phỏng vấn":
+            case "interview":
+                return com.example.firehire_ai.entity.Application.ApplicationStatus.interview;
+            case "từ chối":
+            case "rejected":
+                return com.example.firehire_ai.entity.Application.ApplicationStatus.rejected;
+            case "đã chọn":
+            case "accepted":
+                return com.example.firehire_ai.entity.Application.ApplicationStatus.accepted;
+            default:
+                return com.example.firehire_ai.entity.Application.ApplicationStatus.pending;
+        }
+    }
+
+    private String convertStatusToVietnamese(com.example.firehire_ai.entity.Application.ApplicationStatus status) {
+        switch (status) {
+            case pending:
+                return "Mới";
+            case viewed:
+                return "Đã xem";
+            case interview:
+                return "Phỏng vấn";
+            case rejected:
+                return "Từ chối";
+            case accepted:
+                return "Đã chọn";
+            default:
+                return "Mới";
         }
     }
 }

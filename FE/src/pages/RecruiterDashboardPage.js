@@ -571,6 +571,8 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pendingChanges, setPendingChanges] = useState({}); // Theo dõi các thay đổi chưa lưu
+  const [isSaving, setIsSaving] = useState(false); // Trạng thái đang lưu
   
   // Dữ liệu giả lập để sử dụng nếu API không hoạt động
   const mockApplicants = [
@@ -587,29 +589,38 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
       const fetchApplicants = async () => {
         try {
           setLoading(true);
+          setPendingChanges({}); // Reset pending changes khi load lại data
           const data = await recruiterService.getApplicants(job.id);
           
           // Kiểm tra dữ liệu trả về
-          console.log("Applicants data:", data);
-          console.log("Type of applicants data:", typeof data);
+          console.log("CV data from API:", data);
+          console.log("Type of CV data:", typeof data);
           console.log("Is Array?", Array.isArray(data));
           
-          // Kiểm tra và xử lý dữ liệu
-          if (Array.isArray(data)) {
-            setApplicants(data);
-          } else if (data && data.data && Array.isArray(data.data)) {
-            // Nếu API trả về dữ liệu trong thuộc tính data
-            setApplicants(data.data);
+            // API trả về mảng CVDTO, cần chuyển đổi thành format applicant
+            if (Array.isArray(data)) {
+              const applicantData = data.map(cv => ({
+                id: cv.cvId || cv.id, // Sửa từ cvid thành cvId (chữ I hoa)
+                name: cv.candidateName || 'Không có tên',
+                email: cv.candidateEmail || 'Không có email', 
+                phone: cv.candidatePhone || 'Không có SĐT',
+                appliedDate: cv.uploadDate ? new Date(cv.uploadDate).toLocaleDateString('vi-VN') : 'Không có ngày',
+                status: cv.status || 'Mới', // Sử dụng trạng thái từ API, fallback là 'Mới'
+                cv: cv.fileName || 'CV không có tên',
+                title: cv.title || 'Không có tiêu đề',
+                cvData: cv // Lưu toàn bộ data CV để sử dụng sau
+              }));            console.log(`Đã chuyển đổi ${applicantData.length} CV thành applicant data`);
+            setApplicants(applicantData);
           } else {
-            console.error("API did not return an array for applicants:", data);
-            setError("Dữ liệu ứng viên không đúng định dạng. Sử dụng dữ liệu mẫu.");
+            console.error("API did not return an array for CVs:", data);
+            setError("Dữ liệu CV không đúng định dạng. Sử dụng dữ liệu mẫu.");
             setApplicants(mockApplicants);
           }
           
           setError(null);
         } catch (err) {
-          console.error("Lỗi khi lấy danh sách ứng viên:", err);
-          setError("Không thể lấy danh sách ứng viên. Sử dụng dữ liệu mẫu.");
+          console.error("Lỗi khi lấy danh sách CV:", err);
+          setError("Không thể lấy danh sách CV ứng viên. Sử dụng dữ liệu mẫu.");
           setApplicants(mockApplicants); // Sử dụng dữ liệu mẫu nếu API lỗi
         } finally {
           setLoading(false);
@@ -623,24 +634,66 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
   // Kiểm tra nếu modal không mở hoặc không có thông tin job, trả về null
   if (!isOpen || !job) return null;
   
-  // Hàm xử lý khi thay đổi trạng thái ứng viên
-  const handleStatusChange = async (applicantId, newStatus) => {
+  // Hàm xử lý khi thay đổi trạng thái ứng viên (chỉ cập nhật local state)
+  const handleStatusChange = (applicantId, newStatus) => {
+    // Cập nhật trạng thái trong local state
+    setApplicants(prevApplicants => 
+      prevApplicants.map(applicant => 
+        applicant.id === applicantId 
+          ? { ...applicant, status: newStatus } 
+          : applicant
+      )
+    );
+    
+    // Lưu thay đổi vào pending changes
+    setPendingChanges(prev => ({
+      ...prev,
+      [applicantId]: newStatus
+    }));
+    
+    console.log(`Đã thay đổi trạng thái local của ứng viên ${applicantId} thành ${newStatus}`);
+  };
+  
+  // Hàm lưu tất cả thay đổi trạng thái
+  const handleSaveStatusChanges = async () => {
     try {
-      await recruiterService.updateApplicantStatus(job.id, applicantId, newStatus);
+      setIsSaving(true);
+      const changeEntries = Object.entries(pendingChanges);
       
-      // Cập nhật state sau khi cập nhật thành công
-      setApplicants(prevApplicants => 
-        prevApplicants.map(applicant => 
-          applicant.id === applicantId 
-            ? { ...applicant, status: newStatus } 
-            : applicant
-        )
-      );
+      if (changeEntries.length === 0) {
+        alert('Không có thay đổi nào để lưu.');
+        return;
+      }
       
-      console.log(`Đã thay đổi trạng thái của ứng viên ${applicantId} thành ${newStatus}`);
+      console.log('Đang lưu các thay đổi trạng thái:', pendingChanges);
+      
+      // Lưu từng thay đổi
+      const savePromises = changeEntries.map(async ([applicantId, newStatus]) => {
+        const applicant = applicants.find(app => app.id === parseInt(applicantId));
+        if (!applicant) {
+          throw new Error(`Không tìm thấy ứng viên với ID ${applicantId}`);
+        }
+        
+        const cvId = applicant.cvData?.cvId || applicant.id;
+        console.log(`Lưu trạng thái: applicantId=${applicantId}, cvId=${cvId}, jobId=${job.id}, newStatus=${newStatus}`);
+        
+        return recruiterService.updateApplicantStatus(job.id, cvId, newStatus);
+      });
+      
+      // Thực hiện tất cả requests song song
+      await Promise.all(savePromises);
+      
+      // Clear pending changes sau khi lưu thành công
+      setPendingChanges({});
+      
+      alert(`Đã lưu thành công ${changeEntries.length} thay đổi trạng thái!`);
+      console.log('Đã lưu tất cả thay đổi trạng thái thành công');
+      
     } catch (err) {
-      console.error(`Lỗi khi cập nhật trạng thái của ứng viên ${applicantId}:`, err);
-      alert("Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại sau.");
+      console.error('Lỗi khi lưu thay đổi trạng thái:', err);
+      alert(`Không thể lưu thay đổi: ${err.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -648,23 +701,59 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
   const handleDownloadCV = async (applicant) => {
     try {
       console.log(`Đang tải CV của ứng viên: ${applicant.name}`);
-      await recruiterService.downloadCV(job.id, applicant.id);
-      // URL sẽ được tạo và download tự động trong service
+      console.log('Applicant data:', applicant);
+      
+      // Sử dụng CVID từ data thật hoặc fallback
+      const cvId = applicant.cvData?.cvId || applicant.id; // Sửa từ cvid thành cvId
+      
+      if (!cvId) {
+        throw new Error('Không tìm thấy ID của CV');
+      }
+      
+      await recruiterService.downloadCV(job.id, cvId);
+      console.log(`Đã tải thành công CV ID: ${cvId}`);
     } catch (err) {
       console.error(`Lỗi khi tải CV của ứng viên ${applicant.name}:`, err);
-      alert("Không thể tải CV. Vui lòng thử lại sau.");
+      alert(`Không thể tải CV: ${err.message}`);
     }
   };
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold text-gray-800">Danh sách ứng viên - {job.title}</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100"><X size={20} /></button>
+          <div className="flex items-center gap-3">
+            {/* Hiển thị số thay đổi chưa lưu */}
+            {Object.keys(pendingChanges).length > 0 && (
+              <span className="text-sm text-orange-600 bg-orange-100 px-2 py-1 rounded-md">
+                {Object.keys(pendingChanges).length} thay đổi chưa lưu
+              </span>
+            )}
+            
+            {/* Nút lưu trạng thái */}
+            <button 
+              onClick={handleSaveStatusChanges}
+              disabled={Object.keys(pendingChanges).length === 0 || isSaving}
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                Object.keys(pendingChanges).length > 0 && !isSaving
+                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isSaving && <Loader className="animate-spin" size={16} />}
+              <span>
+                {isSaving ? 'Đang lưu...' : 'Lưu trạng thái'}
+              </span>
+            </button>
+            
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
+              <X size={20} />
+            </button>
+          </div>
         </div>
         
-        <div className="p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <Loader className="animate-spin mr-2" size={24} />
@@ -697,9 +786,18 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.isArray(applicants) && applicants.map(applicant => (
-                  <tr key={applicant.id} className="bg-white border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{applicant.name}</td>
+                  {Array.isArray(applicants) && applicants.map(applicant => {
+                    const hasChanges = pendingChanges.hasOwnProperty(applicant.id);
+                    return (
+                  <tr key={applicant.id} className={`bg-white border-b hover:bg-gray-50 ${hasChanges ? 'bg-yellow-50 border-yellow-200' : ''}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {applicant.name}
+                      {hasChanges && (
+                        <span className="ml-2 text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                          Đã thay đổi
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{applicant.email}</td>
                     <td className="px-4 py-3">{applicant.phone}</td>
                     <td className="px-4 py-3">{applicant.appliedDate}</td>
@@ -707,7 +805,9 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
                       <select 
                         value={applicant.status} 
                         onChange={(e) => handleStatusChange(applicant.id, e.target.value)}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                        className={`bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 ${
+                          hasChanges ? 'bg-yellow-50 border-yellow-300' : ''
+                        }`}
                       >
                         <option value="Mới">Mới</option>
                         <option value="Đã xem">Đã xem</option>
@@ -725,7 +825,7 @@ const ApplicantListModal = ({ isOpen, onClose, job }) => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  )})}
                 </tbody>
               </table>
             </div>
@@ -940,7 +1040,27 @@ const RecruiterDashboardPage = () => {
       if (Array.isArray(jobsData)) {
         if (jobsData.length > 0) {
           console.log(`Đã lấy ${jobsData.length} tin tuyển dụng thành công`);
-          setJobs(jobsData);
+          
+          // Lấy số lượng CV cho mỗi job
+          const jobsWithCVCount = await Promise.all(
+            jobsData.map(async (job) => {
+              try {
+                const cvCount = await recruiterService.getCVCount(job.id);
+                return {
+                  ...job,
+                  applicants: cvCount // Cập nhật số lượng CV thật từ database
+                };
+              } catch (error) {
+                console.error(`Lỗi khi lấy số CV for job ${job.id}:`, error);
+                return {
+                  ...job,
+                  applicants: job.applicants || 0 // Giữ nguyên hoặc set 0
+                };
+              }
+            })
+          );
+          
+          setJobs(jobsWithCVCount);
         } else {
           console.log("Không có tin tuyển dụng nào");
           setJobs([]);
