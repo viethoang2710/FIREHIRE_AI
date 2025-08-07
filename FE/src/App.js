@@ -20,7 +20,7 @@ import RouteGuard from './components/Auth/RouteGuard';
 
 // Main Pages
 import HomePage from './pages/HomePage';
-import JobSearchPage from './pages/JobSearchPage';
+import JobDetailPage from './pages/JobDetailPage';
 import JobsByIndustryPage from './pages/JobsByIndustryPage';
 import JobsByLocationPage from './pages/JobsByLocationPage';
 import HotLatestJobsPage from './pages/HotLatestJobsPage';
@@ -90,7 +90,7 @@ function App() {
                 } />
               <Route path="/login" element={<LoginPage showAlert={showAlert} />} />
               <Route path="/register" element={<RegistrationPage showAlert={showAlert} />} />
-              <Route path="/job-search" element={<JobSearchPage showAlert={showAlert} />} />
+              <Route path="/jobs/:jobId" element={<JobDetailPage showAlert={showAlert} />} />
               <Route path="/jobs-by-industry" element={<JobsByIndustryPage showAlert={showAlert} />} />
               <Route path="/jobs-by-industry/:industrySlug" element={<JobsByIndustryPage showAlert={showAlert} />} />
               <Route path="/jobs-by-location" element={<JobsByLocationPage showAlert={showAlert} />} />

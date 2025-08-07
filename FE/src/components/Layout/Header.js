@@ -28,7 +28,6 @@ const Header = ({ showAlert }) => {
       key: 'jobs',
       icon: Search,
       dropdown: [
-        { name: 'Tìm việc làm', action: () => handleNavigate('jobSearch') },
         { name: 'Việc làm theo ngành nghề', icon: Layers, action: () => handleNavigate('jobsByIndustry') },
         { name: 'Việc làm theo địa điểm', icon: MapPin, action: () => handleNavigate('jobsByLocation') },
         { name: 'Công ty tuyển dụng', action: () => handleNavigate('companies') },

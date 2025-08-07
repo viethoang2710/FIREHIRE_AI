@@ -28,20 +28,19 @@ public class JobSearchService {
             Sort.Direction direction = Sort.Direction.fromString(sortDirection);
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
-            // For now, use basic search - can be enhanced with JPA Specifications later
+            // Get all jobs first
             List<JobPosting> jobs = jobPostingRepository.findAll();
 
-            // Apply filters
+            // Enhanced filtering with better case-insensitive and Unicode support
             List<JobPosting> filteredJobs = jobs.stream()
-                    .filter(job -> keyword == null || job.getTitle().toLowerCase().contains(keyword.toLowerCase())
-                            || job.getDescription().toLowerCase().contains(keyword.toLowerCase()))
-                    .filter(job -> location == null || job.getLocation().toLowerCase().contains(location.toLowerCase()))
-                    .filter(job -> industry == null || job.getIndustry().toLowerCase().contains(industry.toLowerCase()))
-                    .filter(job -> experienceLevel == null
-                            || job.getExperienceLevel().toLowerCase().contains(experienceLevel.toLowerCase()))
+                    .filter(job -> keyword == null || matchesKeyword(job, keyword))
+                    .filter(job -> location == null || matchesLocation(job, location))
+                    .filter(job -> industry == null || matchesIndustry(job, industry))
+                    .filter(job -> experienceLevel == null || matchesExperienceLevel(job, experienceLevel))
+                    .filter(job -> jobType == null || matchesJobType(job, jobType))
                     .collect(Collectors.toList());
 
-            // Convert to DTOs
+            // Convert to DTOs with pagination
             List<JobPostingDTO> jobDTOs = filteredJobs.stream()
                     .skip((long) page * size)
                     .limit(size)
@@ -52,6 +51,73 @@ public class JobSearchService {
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi tìm kiếm: " + e.getMessage(), null);
         }
+    }
+
+    // Enhanced keyword matching with Unicode normalization
+    private boolean matchesKeyword(JobPosting job, String keyword) {
+        if (keyword == null || keyword.trim().isEmpty())
+            return true;
+
+        String normalizedKeyword = normalizeString(keyword);
+        String[] keywords = normalizedKeyword.split("\\s+");
+
+        String jobTitle = normalizeString(job.getTitle());
+        String jobDescription = normalizeString(job.getDescription() != null ? job.getDescription() : "");
+        String companyName = normalizeString(job.getEmployer() != null && job.getEmployer().getCompanyName() != null
+                ? job.getEmployer().getCompanyName()
+                : "");
+
+        return Arrays.stream(keywords).anyMatch(kw -> jobTitle.contains(kw) ||
+                jobDescription.contains(kw) ||
+                companyName.contains(kw));
+    }
+
+    private boolean matchesLocation(JobPosting job, String location) {
+        if (location == null || job.getLocation() == null)
+            return true;
+        return normalizeString(job.getLocation()).contains(normalizeString(location));
+    }
+
+    private boolean matchesIndustry(JobPosting job, String industry) {
+        if (industry == null || job.getIndustry() == null)
+            return true;
+        return normalizeString(job.getIndustry()).contains(normalizeString(industry));
+    }
+
+    private boolean matchesExperienceLevel(JobPosting job, String experienceLevel) {
+        if (experienceLevel == null || job.getExperienceLevel() == null)
+            return true;
+        return normalizeString(job.getExperienceLevel()).contains(normalizeString(experienceLevel));
+    }
+
+    private boolean matchesJobType(JobPosting job, String jobType) {
+        if (jobType == null || job.getJobType() == null)
+            return true;
+        return normalizeString(job.getJobType()).contains(normalizeString(jobType));
+    }
+
+    // Utility method to normalize strings for better matching
+    private String normalizeString(String input) {
+        if (input == null)
+            return "";
+
+        return input.toLowerCase()
+                .trim()
+                // Normalize Unicode to remove Vietnamese accents
+                .replaceAll("à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ", "a")
+                .replaceAll("è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ", "e")
+                .replaceAll("ì|í|ị|ỉ|ĩ", "i")
+                .replaceAll("ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ", "o")
+                .replaceAll("ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ", "u")
+                .replaceAll("ỳ|ý|ỵ|ỷ|ỹ", "y")
+                .replaceAll("đ", "d")
+                .replaceAll("À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ", "a")
+                .replaceAll("È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ", "e")
+                .replaceAll("Ì|Í|Ị|Ỉ|Ĩ", "i")
+                .replaceAll("Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ", "o")
+                .replaceAll("Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ", "u")
+                .replaceAll("Ỳ|Ý|Ỵ|Ỷ|Ỹ", "y")
+                .replaceAll("Đ", "d");
     }
 
     public ApiResponse<List<JobPostingDTO>> searchByLocation(String location, int page, int size) {
@@ -88,15 +154,37 @@ public class JobSearchService {
 
     public ApiResponse<List<String>> getSearchSuggestions(String query, int limit) {
         try {
-            List<JobPosting> jobs = jobPostingRepository.findByTitleContainingIgnoreCase(query);
+            List<JobPosting> jobs = jobPostingRepository.findAll();
+            String normalizedQuery = normalizeString(query);
 
             Set<String> suggestions = jobs.stream()
+                    .filter(job -> {
+                        String normalizedTitle = normalizeString(job.getTitle());
+                        return normalizedTitle.contains(normalizedQuery);
+                    })
                     .map(JobPosting::getTitle)
-                    .filter(title -> title.toLowerCase().contains(query.toLowerCase()))
                     .limit(limit)
                     .collect(Collectors.toSet());
 
-            return new ApiResponse<>(true, "Lấy gợi ý thành công", new ArrayList<>(suggestions));
+            // Also add some common search suggestions based on query
+            if (normalizedQuery.contains("java")) {
+                suggestions.add("Java Developer");
+                suggestions.add("Java Backend Developer");
+                suggestions.add("Java Full Stack Developer");
+            }
+            if (normalizedQuery.contains("react")) {
+                suggestions.add("React Developer");
+                suggestions.add("React Frontend Developer");
+                suggestions.add("React Native Developer");
+            }
+            if (normalizedQuery.contains("marketing")) {
+                suggestions.add("Digital Marketing");
+                suggestions.add("Marketing Manager");
+                suggestions.add("Content Marketing");
+            }
+
+            return new ApiResponse<>(true, "Lấy gợi ý thành công",
+                    suggestions.stream().limit(limit).collect(Collectors.toList()));
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi lấy gợi ý: " + e.getMessage(), null);
         }
@@ -232,13 +320,13 @@ public class JobSearchService {
         dto.setIndustry(jobPosting.getIndustry());
         dto.setExperienceLevel(jobPosting.getExperienceLevel());
         dto.setJobType(jobPosting.getJobType());
-        
+
         String companyName = null;
         if (jobPosting.getEmployer() != null) {
             companyName = jobPosting.getEmployer().getCompanyName();
         }
         dto.setCompanyName(companyName);
-        
+
         dto.setEmployerId(jobPosting.getEmployerId());
         dto.setCreatedDate(jobPosting.getCreatedDate());
         dto.setExpiryDate(jobPosting.getExpiryDate());

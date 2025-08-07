@@ -1,20 +1,34 @@
 // src/pages/JobsByLocationPage.js
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import JobCard from '../components/JobCard';
 import FilterSidebar from '../components/FilterSidebar';
 import Pagination from '../components/Pagination';
 import jobService from '../services/jobService';
+import { filterJobs, getFilterSummary, hasActiveFilters } from '../utils/filterUtils';
 
 function JobsByLocationPage({ showAlert }) {
   const navigate = useNavigate();
   const { locationSlug } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({});
+
+  // Initialize filters from URL params on component mount
+  useEffect(() => {
+    const initialFilters = {};
+    const salaryRange = searchParams.get('salary');
+    const page = searchParams.get('page');
+
+    if (salaryRange) initialFilters.salaryRange = salaryRange;
+    
+    setFilters(initialFilters);
+    if (page) setCurrentPage(parseInt(page) || 1);
+  }, [searchParams]);
 
   // Danh sách địa điểm phổ biến với mapping slug -> actual name
   const popularLocations = [
@@ -53,49 +67,62 @@ function JobsByLocationPage({ showAlert }) {
     navigate(path);
   };
 
+  // Function to apply filters to jobs list
+  const applyFilters = (jobs, filters) => {
+    return filterJobs(jobs, filters);
+  };
+
   useEffect(() => {
     const fetchJobsByLocation = async () => {
       try {
         console.log('=== JOBS BY LOCATION DEBUG ===');
         console.log(`Fetching jobs for location: ${locationSlug || 'all'} with filters:`, filters);
-        console.log('Current environment:', process.env.NODE_ENV);
         setLoading(true);
+        setError(null);
         
         let jobsData = [];
+        let totalElements = 0;
+        
         if (locationSlug) {
           // Convert slug to actual location variations for database query
           const locationVariations = getActualLocationName(locationSlug);
           console.log(`Using location variations: ${JSON.stringify(locationVariations)} for slug: ${locationSlug}`);
           
-          // FORCE DEVELOPMENT MODE để test
-          console.log('FORCING DEVELOPMENT MODE FOR TESTING...');
-          
           // Fetch jobs by specific location variations
           jobsData = await jobService.getJobsByLocation(locationVariations, { 
-            ...filters, 
             page: currentPage - 1, 
             size: 10 
           });
           
-          console.log('Jobs data received from service:', jobsData);
-          console.log('Number of jobs:', jobsData?.length || 0);
+          // Apply additional filters if sidebar filters are active
+          jobsData = applyFilters(jobsData, filters);
+          totalElements = jobsData.length;
+          
+          console.log('Jobs data after filtering:', jobsData.length);
         } else {
-          // Fetch all jobs with location filter from sidebar
+          // Fetch all jobs and apply filters
           const response = await jobService.getAllJobs({ 
-            ...filters, 
             page: currentPage - 1, 
             size: 10 
           });
-          jobsData = response.content || response || [];
+          const allJobs = response.content || response || [];
+          
+          // Apply filters to all jobs
+          jobsData = applyFilters(allJobs, filters);
+          totalElements = jobsData.length;
         }
 
-        setJobs(jobsData);
-        setTotalPages(Math.ceil(jobsData.length / 10));
+        // Apply pagination to filtered results
+        const startIndex = (currentPage - 1) * 10;
+        const paginatedJobs = jobsData.slice(startIndex, startIndex + 10);
+
+        setJobs(paginatedJobs);
+        setTotalPages(Math.ceil(totalElements / 10));
         setError(null);
         
-        console.log(`Successfully loaded ${jobsData.length} jobs for location: ${locationSlug || 'all'}`);
-        if (jobsData.length > 0) {
-          console.log('Sample job locations:', jobsData.slice(0, 3).map(job => job.location));
+        console.log(`Successfully loaded ${paginatedJobs.length} jobs for location: ${locationSlug || 'all'}`);
+        if (paginatedJobs.length > 0) {
+          console.log('Sample job locations:', paginatedJobs.slice(0, 3).map(job => job.location));
         }
       } catch (err) {
         console.error('Error fetching jobs by location:', err);
@@ -106,17 +133,34 @@ function JobsByLocationPage({ showAlert }) {
       }
     };
 
-    fetchJobsByLocation();
+    // Add a small delay to avoid rapid API calls when filters change
+    const timer = setTimeout(() => {
+      fetchJobsByLocation();
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [locationSlug, currentPage, filters]);
 
-  const handleFilterChange = (newFilters) => {
+  const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
     setCurrentPage(1);
-  };
+    
+    // Update URL params with filter values
+    const newSearchParams = new URLSearchParams();
+    if (newFilters.salaryRange) newSearchParams.set('salary', newFilters.salaryRange);
+    newSearchParams.set('page', '1');
+    
+    setSearchParams(newSearchParams);
+  }, [setSearchParams]);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-  };
+    
+    // Update URL params with new page
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('page', page.toString());
+    setSearchParams(newSearchParams);
+  }, [searchParams, setSearchParams]);
 
   const currentLocationName = popularLocations.find(loc => loc.slug === locationSlug)?.name || 'Tất cả địa điểm';
 
@@ -159,10 +203,40 @@ function JobsByLocationPage({ showAlert }) {
 
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/4">
-          <FilterSidebar onFilterChange={handleFilterChange} />
+          <FilterSidebar 
+            onFilterChange={handleFilterChange} 
+            initialFilters={filters}
+            loading={loading}
+            autoApply={false}
+            hideIndustryFilter={true}
+            hideLocationFilter={!!locationSlug}
+            currentIndustry={null}
+            currentLocation={locationSlug ? currentLocationName : null}
+          />
         </div>
 
         <div className="md:w-3/4">
+          {/* Filter results summary */}
+          <div className="mb-4 flex justify-between items-center">
+            <div>
+              {!loading && (
+                <p className="text-gray-600">
+                  {jobs.length > 0 
+                    ? `Hiển thị ${jobs.length} việc làm${getFilterSummary(filters, currentLocationName) ? ` ${getFilterSummary(filters, currentLocationName)}` : ''}`
+                    : 'Không tìm thấy việc làm phù hợp'
+                  }
+                </p>
+              )}
+            </div>
+            <div>
+              {hasActiveFilters(filters) && !loading && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Đã áp dụng bộ lọc
+                </span>
+              )}
+            </div>
+          </div>
+
           {jobs.length > 0 ? (
             <>
               <div className="grid grid-cols-1 gap-4">
@@ -170,14 +244,41 @@ function JobsByLocationPage({ showAlert }) {
                   <JobCard key={job.id} job={job} navigate={navigate} showAlert={showAlert} />
                 ))}
               </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </>
           ) : (
-            <p className="text-center text-gray-600">Không tìm thấy việc làm nào tại địa điểm này phù hợp với tiêu chí của bạn.</p>
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-700 mb-2">Không tìm thấy việc làm</h3>
+              <p className="text-gray-600 mb-4">
+                {hasActiveFilters(filters)
+                  ? 'Thử điều chỉnh bộ lọc để xem thêm kết quả'
+                  : 'Hiện tại chưa có việc làm nào tại địa điểm này'
+                }
+              </p>
+              {hasActiveFilters(filters) && (
+                <button
+                  onClick={() => {
+                    setFilters({});
+                    setSearchParams(new URLSearchParams());
+                  }}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 transition-colors"
+                >
+                  Xóa bộ lọc
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

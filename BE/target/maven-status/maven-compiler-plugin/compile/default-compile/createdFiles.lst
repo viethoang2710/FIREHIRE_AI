@@ -15,7 +15,6 @@ com\example\firehire_ai\entity\CVTemplate$CVTemplateBuilder.class
 com\example\firehire_ai\controller\AdminController.class
 com\example\firehire_ai\config\WebConfig$1.class
 com\example\firehire_ai\controller\UserProfileController.class
-com\example\firehire_ai\controller\CVController.class
 com\example\firehire_ai\dto\response\StatisticsDTO$TopCompaniesData.class
 com\example\firehire_ai\dto\response\CVViewLogDTO$CVViewLogDTOBuilder.class
 com\example\firehire_ai\dto\response\StatisticsDTO$CategoryDistributionData$CategoryDistributionDataBuilder.class
@@ -124,7 +123,6 @@ com\example\firehire_ai\dto\response\ApplicationDTO$ApplicationDTOBuilder.class
 com\example\firehire_ai\dto\response\StatisticsDTO$StatisticsDTOBuilder.class
 com\example\firehire_ai\entity\CV$CVBuilder.class
 com\example\firehire_ai\entity\SkillTag$SkillTagBuilder.class
-com\example\firehire_ai\service\CVService.class
 com\example\firehire_ai\entity\CVSkillTag$CVSkillTagBuilder.class
 com\example\firehire_ai\entity\CV.class
 com\example\firehire_ai\config\WebConfig.class

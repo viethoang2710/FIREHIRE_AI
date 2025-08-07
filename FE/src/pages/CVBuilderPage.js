@@ -3,7 +3,7 @@ import { User, Briefcase, Award, Star, Edit, PlusCircle, Trash2, Download, Setti
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from '../hooks/useAuth';
-import cvService from '../services/cvService';
+import { cvService } from '../services/cvService';
 
 // Import các component đã được phân tách
 import AccordionSection from '../components/UI/AccordionSection';

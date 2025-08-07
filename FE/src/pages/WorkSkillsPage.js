@@ -1,12 +1,10 @@
-// src/pages/WorkSkillsPage.js
 import React, { useState, useEffect } from 'react';
 
-// Mock data cho các bài viết kỹ năng làm việc (đã cập nhật link thực tế)
 const mockWorkSkills = [
   {
     id: 1,
     title: 'Kỹ năng giao tiếp hiệu quả tại nơi làm việc',
-    imageUrl: 'https://via.placeholder.com/300x200/F44336/ffffff?text=Communication',
+    imageUrl: 'https://mlv.pace.edu.vn/uploads/hinh_anh/2023/cheerful-colleagues-communicating-during-break.jpg',
     excerpt: 'Cải thiện cách bạn tương tác với đồng nghiệp và cấp trên.',
     date: '01/06/2025',
     url: 'https://mlv.pace.edu.vn/resources-mlv/1221/tai-sao-k-nang-giao-tiep-lai-quan-trong-tai-noi-lam-viec'
@@ -14,7 +12,7 @@ const mockWorkSkills = [
   {
     id: 2,
     title: 'Quản lý thời gian: Tối ưu hiệu suất làm việc',
-    imageUrl: 'https://via.placeholder.com/300x200/9C27B0/ffffff?text=Time+Management',
+    imageUrl: 'https://www.pace.edu.vn/uploads/news/2023/08/thoi-gian-la-gi.jpg',
     excerpt: 'Học các phương pháp quản lý thời gian để đạt được nhiều hơn.',
     date: '29/05/2025',
     url: 'https://www.pace.edu.vn/tin-kho-tri-thuc/quan-ly-thoi-gian'
@@ -22,26 +20,26 @@ const mockWorkSkills = [
   {
     id: 3,
     title: 'Kỹ năng giải quyết vấn đề trong công việc',
-    imageUrl: 'https://via.placeholder.com/300x200/00BCD4/ffffff?text=Problem+Solving',
+    imageUrl: 'https://www.pace.edu.vn/uploads/news/2023/04/1-khai-niem-ky-nang-giai-quyet-van-de.jpg',
     excerpt: 'Phát triển tư duy phân tích và tìm ra giải pháp hiệu quả.',
     date: '25/05/2025',
-    url: 'https://career.gpo.vn/ky-nang-giai-quyet-van-de-trong-cong-viec-a2549.html'
+    url: 'https://www.pace.edu.vn/tin-kho-tri-thuc/ky-nang-giai-quyet-van-de'
   },
   {
     id: 4,
     title: 'Làm việc nhóm: Xây dựng team mạnh mẽ',
-    imageUrl: 'https://via.placeholder.com/300x200/FFEB3B/000000?text=Teamwork',
+    imageUrl: 'https://www.pace.edu.vn/uploads/news/2023/04/2-vai-tro-cua-ky-nang-lam-viec-nhom.jpg',
     excerpt: 'Bí quyết để trở thành thành viên đội nhóm xuất sắc.',
     date: '20/05/2025',
-    url: 'https://careerbuilder.vn/vi/talentcommunity/5-bi-quyet-lam-viec-nhom-hieu-qua.35A54779.html'
+    url: 'https://www.pace.edu.vn/tin-kho-tri-thuc/ky-nang-lam-viec-nhom'
   },
   {
     id: 5,
     title: 'Kỹ năng thích nghi với môi trường làm việc mới',
-    imageUrl: 'https://via.placeholder.com/300x200/8BC34A/ffffff?text=Adaptability',
+    imageUrl: 'https://cdn.thuvienphapluat.vn/uploads/laodongtienluong/20230301/NTK/2024/thang-11/13/ldtl-1.jpg',
     excerpt: 'Làm thế nào để nhanh chóng hòa nhập và phát triển.',
     date: '15/05/2025',
-    url: 'https://hrinsider.vietnamworks.com/ky-nang-thich-nghi-voi-moi-truong-lam-viec-moi/'
+    url: 'https://thuvienphapluat.vn/lao-dong-tien-luong/cam-nang-di-lam/cong-dien-chi-dao-ung-pho-bao-so-8-toraji-moi-nhat-ngay-12-11-2024-dien-bien-bao-so-8-sau-khi-di-vao-667.html'
   },
 ];
 
@@ -51,7 +49,6 @@ function WorkSkillsPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
     setTimeout(() => {
       setSkills(mockWorkSkills);
       setLoading(false);
@@ -77,7 +74,7 @@ function WorkSkillsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">Nâng cao Kỹ năng làm việc</h1>
-<p className="text-lg text-gray-600 mb-10 text-center max-w-2xl mx-auto">
+      <p className="text-lg text-gray-600 mb-10 text-center max-w-2xl mx-auto">
         Khám phá và phát triển các kỹ năng mềm và kỹ năng cứng cần thiết để thành công trong sự nghiệp của bạn.
       </p>
 

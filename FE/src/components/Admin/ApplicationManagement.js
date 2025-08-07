@@ -15,16 +15,23 @@ import {
   Search
 } from 'lucide-react';
 import applicationService from '../../services/applicationService';
+import { cvService } from '../../services/cvService';
+import CVViewModal from './CVViewModal';
 
 const ApplicationManagement = ({ showAlert }) => {
   const [applications, setApplications] = useState([]);
+  const [cvs, setCvs] = useState([]); // Dữ liệu từ bảng CVs
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [jobFilter, setJobFilter] = useState('ALL');
+  const [showCVModal, setShowCVModal] = useState(false);
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const [selectedApplication, setSelectedApplication] = useState(null);
 
   useEffect(() => {
     fetchApplications();
+    fetchCVsData(); // Lấy dữ liệu từ bảng CVs
   }, []);
 
   const fetchApplications = async () => {
@@ -42,11 +49,94 @@ const ApplicationManagement = ({ showAlert }) => {
       }
       
       if (response?.success) {
+        console.log('Applications data received:', response.data); // Debug log
         setApplications(response.data || []);
       }
     } catch (error) {
       console.error('Error fetching applications:', error);
       showAlert('Không thể tải danh sách CV ứng tuyển', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hàm mới để lấy dữ liệu từ bảng CVs
+  const fetchCVsData = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching CVs from database with multiple endpoints...');
+      
+      // Thử nhiều endpoints khác nhau
+      let response = null;
+      
+      try {
+        response = await cvService.getAllCVsWithFallback();
+        console.log('Successfully got CVs with fallback method:', response);
+      } catch (error) {
+        console.log('Fallback method failed, trying original method...');
+        response = await cvService.getAllCVs();
+      }
+      
+      console.log('Raw API response:', response);
+      
+      if (response?.success && response?.data?.length > 0) {
+        console.log('CVs data received:', response.data);
+        setCvs(response.data || []);
+        
+        // Chuyển đổi dữ liệu CV thành format của applications để hiển thị
+        const cvApplications = (response.data || []).map((cv, index) => ({
+          applicationId: cv.cvId || cv.id || `cv_${index}`,
+          candidateName: cv.candidateName || cv.fullName || cv.name || cv.candidate_name || 'Ứng viên không rõ tên',
+          jobTitle: cv.jobTitle || cv.targetPosition || cv.position || cv.job_title || cv.target_position || 'Vị trí ứng tuyển',
+          companyName: cv.companyName || cv.targetCompany || cv.company_name || cv.target_company || 'Chưa xác định',
+          status: cv.status || cv.applicationStatus || cv.application_status || 'PENDING',
+          appliedAt: cv.createdAt || cv.uploadedAt || cv.submittedAt || cv.created_at || cv.uploaded_at || cv.submitted_at || new Date().toISOString(),
+          coverLetter: cv.coverLetter || cv.summary || cv.description || cv.cover_letter || '',
+          cvFileName: cv.fileName || cv.originalName || cv.file_name || cv.original_name || 'CV.pdf',
+          cvFilePath: cv.filePath || cv.file_path,
+          cvUrl: cv.fileUrl || cv.file_url,
+          cvId: cv.cvId || cv.id,
+          email: cv.email || cv.candidate_email,
+          phone: cv.phone || cv.candidate_phone
+        }));
+        
+        setApplications(cvApplications);
+        console.log('Converted CV data to applications format:', cvApplications);
+        showAlert(`Đã tải ${cvApplications.length} CV từ database thành công!`, 'success');
+      } else if (response?.data?.length === 0) {
+        console.log('Database connected but no CVs found');
+        setApplications([]);
+        setCvs([]);
+        showAlert('Database kết nối thành công nhưng chưa có CV nào. Vui lòng thêm dữ liệu CV.', 'info');
+      } else {
+        console.log('No real CV data found in database or invalid response format');
+        setApplications([]);
+        setCvs([]);
+        showAlert('Không tìm thấy CV nào trong database. Vui lòng kiểm tra cấu trúc dữ liệu.', 'warning');
+      }
+    } catch (error) {
+      console.error('Error fetching CVs from database:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
+      
+      // Không dùng mock data, chỉ hiển thị lỗi thật
+      setApplications([]);
+      setCvs([]);
+      
+      if (error.response?.status === 404) {
+        showAlert('API endpoint cho CVs không tồn tại. Vui lòng kiểm tra backend và cấu hình routes.', 'error');
+      } else if (error.response?.status === 500) {
+        showAlert('Lỗi server khi truy vấn bảng CVs. Vui lòng kiểm tra database connection và table structure.', 'error');
+      } else if (error.message?.includes('Network Error')) {
+        showAlert('Không thể kết nối đến server. Vui lòng kiểm tra backend server đang chạy.', 'error');
+      } else if (error.message?.includes('All CV endpoints failed')) {
+        showAlert('Tất cả API endpoints cho CVs đều thất bại. Vui lòng kiểm tra backend configuration.', 'error');
+      } else {
+        showAlert(`Lỗi khi tải CV từ database: ${error.message || 'Unknown error'}`, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -63,6 +153,19 @@ const ApplicationManagement = ({ showAlert }) => {
       console.error('Error updating status:', error);
       showAlert('Không thể cập nhật trạng thái', 'error');
     }
+  };
+
+  const handleViewCV = (application) => {
+    console.log('Opening CV for application:', application); // Debug log
+    setSelectedApplicationId(application.applicationId);
+    setSelectedApplication(application);
+    setShowCVModal(true);
+  };
+
+  const handleCloseCVModal = () => {
+    setShowCVModal(false);
+    setSelectedApplicationId(null);
+    setSelectedApplication(null);
   };
 
   const getStatusColor = (status) => {
@@ -112,6 +215,15 @@ const ApplicationManagement = ({ showAlert }) => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Quản lý CV ứng tuyển</h2>
         <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              console.log('Refreshing CVs data...');
+              fetchCVsData();
+            }}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+          >
+            Tải CV từ DB
+          </button>
           <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
             {filteredApplications.length} CV
           </span>
@@ -146,7 +258,10 @@ const ApplicationManagement = ({ showAlert }) => {
         </select>
 
         <button
-          onClick={fetchApplications}
+          onClick={() => {
+            console.log('Refreshing all data...');
+            fetchCVsData();
+          }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           Làm mới
@@ -158,8 +273,32 @@ const ApplicationManagement = ({ showAlert }) => {
         {filteredApplications.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">Chưa có CV ứng tuyển nào</h3>
-            <p className="text-gray-500">Khi có ứng viên nộp CV, danh sách sẽ hiển thị tại đây</p>
+            <h3 className="text-lg font-medium text-gray-600 mb-2">
+              {applications.length === 0 ? 'Không tìm thấy CV trong database' : 'Không có CV phù hợp với bộ lọc'}
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {applications.length === 0 
+                ? 'Vui lòng kiểm tra kết nối database và đảm bảo có dữ liệu trong bảng CVs' 
+                : 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái'
+              }
+            </p>
+            {applications.length === 0 && (
+              <div className="space-y-2">
+                <button
+                  onClick={fetchCVsData}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2"
+                >
+                  Thử lại kết nối
+                </button>
+                <div className="text-xs text-gray-400">
+                  <p>Kiểm tra:</p>
+                  <p>1. Backend server đang chạy</p>
+                  <p>2. Database kết nối thành công</p>
+                  <p>3. Bảng CVs có dữ liệu</p>
+                  <p>4. API endpoint /api/cvs/all hoạt động</p>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           filteredApplications.map((application) => (
@@ -250,7 +389,7 @@ const ApplicationManagement = ({ showAlert }) => {
 
                   <button
                     className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1"
-                    onClick={() => showAlert('Tính năng xem/tải CV sẽ được triển khai sớm', 'info')}
+                    onClick={() => handleViewCV(application)}
                   >
                     <Eye className="h-4 w-4" />
                     <span>Xem CV</span>
@@ -290,6 +429,15 @@ const ApplicationManagement = ({ showAlert }) => {
             <div className="text-emerald-700 text-sm">Đã tuyển</div>
           </div>
         </div>
+      )}
+
+      {/* CV View Modal */}
+      {showCVModal && (
+        <CVViewModal
+          isOpen={showCVModal}
+          onClose={handleCloseCVModal}
+          application={selectedApplication}
+        />
       )}
     </div>
   );

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Case-Insensitive Search - FIREHIRE AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-radius: 6px;
+            border-left: 4px solid #2563eb;
+        }
+        .job-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .job-title {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+        .job-company {
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+        .job-details {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .error {
+            color: #dc2626;
+            background-color: #fef2f2;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #dc2626;
+        }
+        .success {
+            color: #059669;
+            background-color: #f0fdf4;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #059669;
+        }
+        .test-cases {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-case {
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .test-case h4 {
+            margin: 0 0 10px 0;
+            color: #374151;
+        }
+        .test-examples {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .loading {
+            display: none;
+            color: #2563eb;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Tính Năng Tìm Kiếm Không Phân Biệt Chữ Hoa/Thường</h1>
+        
+        <div class="test-section">
+            <h3>📝 Test Tìm Kiếm Chatbot</h3>
+            <div>
+                <input type="text" id="searchQuery" placeholder="Nhập từ khóa tìm kiếm (vd: JAVA developer, react, marketing...)" />
+                <button onclick="testChatbotSearch()">Tìm Kiếm</button>
+            </div>
+            <div class="loading" id="loading">Đang tìm kiếm...</div>
+            <div id="searchResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="test-cases">
+            <div class="test-case">
+                <h4>🔤 Test Chữ Hoa/Thường</h4>
+                <div class="test-examples">
+                    <p><strong>Thử các cách viết:</strong></p>
+                    <p>• JAVA DEVELOPER</p>
+                    <p>• React Developer</p>
+                    <p>• javascript</p>
+                    <p>• MARKETING MANAGER</p>
+                    <p>• python PROGRAMMER</p>
+                </div>
+                <button onclick="runCaseTests()">Test Tự Động</button>
+            </div>
+
+            <div class="test-case">
+                <h4>🇻🇳 Test Tiếng Việt Có Dấu</h4>
+                <div class="test-examples">
+                    <p><strong>Thử các từ khóa:</strong></p>
+                    <p>• lập trình viên</p>
+                    <p>• LẬP TRÌNH VIÊN</p>
+                    <p>• thiết kế</p>
+                    <p>• QUẢN LÝ</p>
+                    <p>• Hà Nội</p>
+                </div>
+                <button onclick="runVietnameseTests()">Test Tiếng Việt</button>
+            </div>
+
+            <div class="test-case">
+                <h4>🔧 Test Kỹ Thuật</h4>
+                <div class="test-examples">
+                    <p><strong>Công nghệ phổ biến:</strong></p>
+                    <p>• REACT vs react</p>
+                    <p>• JavaScript vs JAVASCRIPT</p>
+                    <p>• Spring Boot vs spring boot</p>
+                    <p>• NODE.JS vs node js</p>
+                </div>
+                <button onclick="runTechTests()">Test Công Nghệ</button>
+            </div>
+
+            <div class="test-case">
+                <h4>📍 Test Địa Điểm</h4>
+                <div class="test-examples">
+                    <p><strong>Địa điểm làm việc:</strong></p>
+                    <p>• HÀ NỘI vs Hà Nội</p>
+                    <p>• HCM vs hcm</p>
+                    <p>• Remote vs REMOTE</p>
+                    <p>• Đà Nẵng vs ĐÀ NẴNG</p>
+                </div>
+                <button onclick="runLocationTests()">Test Địa Điểm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/chatbot';
+
+        async function testChatbotSearch() {
+            const query = document.getElementById('searchQuery').value.trim();
+            if (!query) {
+                alert('Vui lòng nhập từ khóa tìm kiếm!');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('searchResults');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/search-jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                results.style.display = 'block';
+
+                if (data.success && data.data && data.data.length > 0) {
+                    results.innerHTML = `
+                        <div class="success">
+                            <strong>✅ Thành công!</strong> ${data.message}
+                        </div>
+                        <div id="jobsList">
+                            ${data.data.map(job => `
+                                <div class="job-card">
+                                    <div class="job-title">${job.title}</div>
+                                    <div class="job-company">🏢 ${job.company || 'Chưa có thông tin'}</div>
+                                    <div class="job-details">
+                                        📍 ${job.location || 'Không xác định'} | 
+                                        💰 ${job.salary || 'Thỏa thuận'} | 
+                                        🏭 ${job.industry || 'Không xác định'}
+                                    </div>
+                                    <div class="job-details" style="margin-top: 8px;">
+                                        ${job.description || 'Không có mô tả'}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Không tìm thấy!</strong> ${data.message || 'Không có kết quả phù hợp'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                results.innerHTML = `
+                    <div class="error">
+                        <strong>🔴 Lỗi kết nối!</strong> ${error.message}
+                        <br><small>Đảm bảo backend đang chạy trên port 8080</small>
+                    </div>
+                `;
+            }
+        }
+
+        async function testQuery(query, testName) {
+            try {
+                const response = await fetch(`${API_BASE}/search-jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+                
+                return {
+                    testName: testName,
+                    query: query,
+                    success: data.success,
+                    count: data.data ? data.data.length : 0,
+                    message: data.message
+                };
+            } catch (error) {
+                return {
+                    testName: testName,
+                    query: query,
+                    success: false,
+                    count: 0,
+                    message: `Lỗi: ${error.message}`
+                };
+            }
+        }
+
+        async function runCaseTests() {
+            const tests = [
+                { query: 'JAVA DEVELOPER', name: 'Chữ hoa toàn bộ' },
+                { query: 'React Developer', name: 'Chữ hoa đầu từ' },
+                { query: 'javascript', name: 'Chữ thường toàn bộ' },
+                { query: 'MARKETING MANAGER', name: 'Chữ hoa có khoảng trống' },
+                { query: 'python PROGRAMMER', name: 'Hỗn hợp chữ hoa/thường' }
+            ];
+
+            await runTestSuite(tests);
+        }
+
+        async function runVietnameseTests() {
+            const tests = [
+                { query: 'lập trình viên', name: 'Tiếng Việt có dấu thường' },
+                { query: 'LẬP TRÌNH VIÊN', name: 'Tiếng Việt có dấu hoa' },
+                { query: 'thiết kế', name: 'Thiết kế thường' },
+                { query: 'QUẢN LÝ', name: 'Quản lý hoa' },
+                { query: 'Hà Nội', name: 'Địa danh có dấu' }
+            ];
+
+            await runTestSuite(tests);
+        }
+
+        async function runTechTests() {
+            const tests = [
+                { query: 'REACT', name: 'React chữ hoa' },
+                { query: 'react', name: 'React chữ thường' },
+                { query: 'JavaScript', name: 'JavaScript viết đúng' },
+                { query: 'JAVASCRIPT', name: 'JavaScript chữ hoa' },
+                { query: 'NODE.JS', name: 'NodeJS có dấu chấm' }
+            ];
+
+            await runTestSuite(tests);
+        }
+
+        async function runLocationTests() {
+            const tests = [
+                { query: 'HÀ NỘI', name: 'Hà Nội chữ hoa' },
+                { query: 'Hà Nội', name: 'Hà Nội bình thường' },
+                { query: 'HCM', name: 'HCM viết tắt' },
+                { query: 'hcm', name: 'hcm thường' },
+                { query: 'REMOTE', name: 'Remote chữ hoa' }
+            ];
+
+            await runTestSuite(tests);
+        }
+
+        async function runTestSuite(tests) {
+            const results = document.getElementById('searchResults');
+            results.style.display = 'block';
+            results.innerHTML = '<div class="loading">Đang chạy test suite...</div>';
+
+            const testResults = [];
+            for (let test of tests) {
+                const result = await testQuery(test.query, test.name);
+                testResults.push(result);
+                
+                // Update progress
+                results.innerHTML = `
+                    <div>Đang test: ${test.name} (${testResults.length}/${tests.length})</div>
+                `;
+                
+                // Delay để tránh spam API
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Display results
+            results.innerHTML = `
+                <div class="success">
+                    <strong>📊 Kết Quả Test Suite</strong>
+                </div>
+                <div>
+                    ${testResults.map(result => `
+                        <div class="test-case" style="margin: 10px 0;">
+                            <h4 style="margin: 5px 0;">${result.testName}</h4>
+                            <div><strong>Query:</strong> "${result.query}"</div>
+                            <div><strong>Kết quả:</strong> 
+                                <span style="color: ${result.success ? 'green' : 'red'}">
+                                    ${result.success ? '✅' : '❌'} ${result.count} jobs found
+                                </span>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">${result.message}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Bind enter key to search
+        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testChatbotSearch();
+            }
+        });
+    </script>
+</body>
+</html>

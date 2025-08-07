@@ -134,38 +134,63 @@ function AdminDashboardPage() {
       <div className="flex-1 flex flex-col lg:ml-72">
         {/* Page content */}
         <main className="flex-1 w-full">
-          {/* Page Title Bar */}
-          <div className="flex justify-between items-center mb-6 bg-blue-600 p-4 shadow-sm border-b w-full relative z-10">
-            <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="text-white hover:text-blue-100 lg:hidden mr-4"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <h1 className="text-2xl font-semibold text-white">
-                {menuItems.find(item => item.id === activeTab)?.label || 'Admin Dashboard'}
-              </h1>
+          {/* Page Title Bar - Ẩn khi ở trang overview */}
+          {activeTab !== 'overview' && (
+            <div className="flex justify-between items-center mb-6 bg-blue-600 p-4 shadow-sm border-b w-full relative z-10">
+              <div className="flex items-center">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="text-white hover:text-blue-100 lg:hidden mr-4"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+                <h1 className="text-2xl font-semibold text-white">
+                  {menuItems.find(item => item.id === activeTab)?.label || 'Admin Dashboard'}
+                </h1>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-blue-400 shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-400"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Xuất dữ liệu
+                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="h-8 w-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">A</span>
+                  </div>
+                  <span className="text-sm font-medium text-white">Admin</span>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowExportModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-blue-400 shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-400"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Xuất dữ liệu
-              </button>
+          )}
+          
+          {/* Thanh tài khoản riêng cho trang overview */}
+          {activeTab === 'overview' && (
+            <div className="flex justify-between items-center mb-6 p-4 w-full relative z-10">
+              <div className="flex items-center">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="text-gray-600 hover:text-gray-800 lg:hidden mr-4"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
+              
               <div className="flex items-center space-x-3">
                 <div className="h-8 w-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-medium">A</span>
                 </div>
-                <span className="text-sm font-medium text-white">Admin</span>
+                <span className="text-sm font-medium text-gray-700">Admin</span>
               </div>
             </div>
-          </div>
+          )}
           
           <div className="px-4 w-full relative z-10">
             {renderContent()}

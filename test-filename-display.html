@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Original Filename Display</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .cv-item { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .filename { font-weight: bold; color: #0066cc; }
+        .test-result { margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Original Filename Display</h1>
+    
+    <div class="test-result">
+        <h3>API Response Test:</h3>
+        <button onclick="testAPI()">Test /api/cv/all</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <div class="test-result">
+        <h3>Download Test:</h3>
+        <button onclick="testDownload(1)">Test Download CV ID 1</button>
+        <button onclick="testDownload(5)">Test Download CV ID 5</button>
+        <div id="downloadResult"></div>
+    </div>
+
+    <div id="cvList"></div>
+
+    <script>
+        async function testAPI() {
+            try {
+                const response = await fetch('http://localhost:8080/api/cv/all');
+                const data = await response.json();
+                
+                document.getElementById('apiResult').innerHTML = 
+                    `<strong>✅ API Response:</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Display CV list with filenames
+                displayCVs(data.data);
+            } catch (error) {
+                document.getElementById('apiResult').innerHTML = 
+                    `<strong>❌ Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function testDownload(cvId) {
+            try {
+                const response = await fetch(`http://localhost:8080/api/cv/${cvId}/download?format=original`, {
+                    method: 'HEAD'
+                });
+                
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let extractedFileName = 'Unknown';
+                
+                if (contentDisposition) {
+                    const fileNameMatch = contentDisposition.match(/filename[^;=\\n]*=((['"]).*?\\2|[^;\\n]*)/);
+                    if (fileNameMatch && fileNameMatch[1]) {
+                        extractedFileName = fileNameMatch[1].replace(/['"]/g, '');
+                    }
+                }
+
+                document.getElementById('downloadResult').innerHTML += 
+                    `<div><strong>CV ID ${cvId}:</strong> ${extractedFileName}</div>`;
+                    
+            } catch (error) {
+                document.getElementById('downloadResult').innerHTML += 
+                    `<div><strong>❌ CV ID ${cvId}:</strong> ${error.message}</div>`;
+            }
+        }
+
+        function displayCVs(cvs) {
+            const cvListEl = document.getElementById('cvList');
+            cvListEl.innerHTML = '<h3>📄 CVs with Original Filenames:</h3>';
+            
+            cvs.forEach(cv => {
+                const cvItem = document.createElement('div');
+                cvItem.className = 'cv-item';
+                cvItem.innerHTML = `
+                    <div><strong>CV ID:</strong> ${cv.cvId}</div>
+                    <div><strong>User:</strong> ${cv.userFullName}</div>
+                    <div><strong>Job:</strong> ${cv.job?.title || 'N/A'}</div>
+                    <div class="filename"><strong>Original FileName:</strong> ${cv.fileName || 'NOT FOUND'}</div>
+                    <div><strong>File Size:</strong> ${cv.fileSize} bytes</div>
+                    <div><strong>File Type:</strong> ${cv.fileType}</div>
+                    <button onclick="downloadCV(${cv.cvId}, '${cv.fileName}')">📥 Download Original</button>
+                `;
+                cvListEl.appendChild(cvItem);
+            });
+        }
+
+        async function downloadCV(cvId, originalFileName) {
+            try {
+                const response = await fetch(`http://localhost:8080/api/cv/${cvId}/download?format=original`);
+                const blob = await response.blob();
+                
+                // Extract filename from Content-Disposition header
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let fileName = originalFileName || `CV_${cvId}.pdf`;
+                
+                if (contentDisposition) {
+                    const fileNameMatch = contentDisposition.match(/filename[^;=\\n]*=((['"]).*?\\2|[^;\\n]*)/);
+                    if (fileNameMatch && fileNameMatch[1]) {
+                        fileName = fileNameMatch[1].replace(/['"]/g, '');
+                    }
+                }
+                
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                alert(`✅ Downloaded: ${fileName}`);
+            } catch (error) {
+                alert(`❌ Download failed: ${error.message}`);
+            }
+        }
+
+        // Auto-test when page loads
+        window.onload = function() {
+            testAPI();
+        };
+    </script>
+</body>
+</html>

@@ -108,6 +108,37 @@ public class CVService {
         }
     }
 
+    public ApiResponse<List<CVDTO>> getAllCVs() {
+        try {
+            // Lấy tất cả CVs trong database
+            List<CV> cvs = cvRepository.findAll();
+
+            if (cvs.isEmpty()) {
+                return ApiResponse.success("No CVs found in database", List.of());
+            }
+
+            List<CVDTO> cvDTOs = cvs.stream()
+                    .map(cv -> {
+                        CVDTO dto = CVDTO.fromEntity(cv);
+                        // Thêm thông tin candidate từ user
+                        if (cv.getUser() != null) {
+                            dto.setCandidateName(cv.getUser().getFullName());
+                            dto.setCandidateEmail(cv.getUser().getEmail());
+                            dto.setCandidatePhone(cv.getUser().getPhoneNumber());
+                        }
+
+                        // Job info đã được handle trong CVDTO.fromEntity()
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+
+            return ApiResponse.success("All CVs retrieved successfully", cvDTOs);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the full stack trace
+            return ApiResponse.error("Failed to retrieve all CVs: " + e.getMessage());
+        }
+    }
+
     public ApiResponse<List<CVDTO>> getCVsByJobId(Integer jobId) {
         try {
             // Lấy tất cả CVs có JobID trùng với jobId được yêu cầu
@@ -211,6 +242,34 @@ public class CVService {
             }
         } catch (Exception e) {
             return ApiResponse.error("Failed to download CV: " + e.getMessage());
+        }
+    }
+
+    // Method to download original CV file uploaded by candidate
+    public ApiResponse<byte[]> downloadOriginalCVFile(Integer cvId) {
+        try {
+            CV cv = cvRepository.findById(cvId)
+                    .orElseThrow(() -> new RuntimeException("CV not found"));
+
+            if (cv.getFileData() == null) {
+                return ApiResponse.error("No original file data found for this CV");
+            }
+
+            return new ApiResponse<>(true, "Original CV file retrieved successfully", cv.getFileData());
+        } catch (Exception e) {
+            return ApiResponse.error("Failed to download original CV file: " + e.getMessage());
+        }
+    }
+
+    // Method to get CV info along with file data for proper filename
+    public ApiResponse<CV> getCVWithFileData(Integer cvId) {
+        try {
+            CV cv = cvRepository.findById(cvId)
+                    .orElseThrow(() -> new RuntimeException("CV not found"));
+
+            return new ApiResponse<>(true, "CV retrieved successfully", cv);
+        } catch (Exception e) {
+            return ApiResponse.error("Failed to retrieve CV: " + e.getMessage());
         }
     }
 

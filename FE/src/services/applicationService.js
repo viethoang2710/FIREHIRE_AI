@@ -2,10 +2,10 @@
 import api from './api';
 
 const applicationService = {
-  // Lấy tất cả applications (for admin)
+  // Lấy tất cả applications (for admin) với thông tin CV
   getAllApplications: async () => {
     try {
-      const response = await api.get('/api/applications');
+      const response = await api.get('/api/applications/with-cv');
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch all applications' };
@@ -113,6 +113,50 @@ const applicationService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to delete application' };
+    }
+  },
+
+  // Tải CV file từ bảng CVs
+  downloadCV: async (applicationId) => {
+    try {
+      const response = await api.get(`/api/cvs/download/${applicationId}`, {
+        responseType: 'blob'
+      });
+      return response;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to download CV' };
+    }
+  },
+
+  // Lấy thông tin chi tiết application (bao gồm CV từ bảng CVs)
+  getApplicationDetails: async (applicationId) => {
+    try {
+      const response = await api.get(`/api/applications/${applicationId}/with-cv`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch application details' };
+    }
+  },
+
+  // Xem CV (preview) từ bảng CVs
+  viewCV: async (applicationId) => {
+    try {
+      const response = await api.get(`/api/cvs/view/${applicationId}`, {
+        responseType: 'blob'
+      });
+      return response;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to view CV' };
+    }
+  },
+
+  // Lấy metadata của CV từ bảng CVs
+  getCVMetadata: async (applicationId) => {
+    try {
+      const response = await api.get(`/api/cvs/metadata/${applicationId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch CV metadata' };
     }
   }
 };
